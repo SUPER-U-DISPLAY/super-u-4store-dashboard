@@ -70,7 +70,9 @@
     else if (page === "actions") el.innerHTML = pageActions();
     else el.innerHTML = pageStore(page);
     el.innerHTML += annoSection(page);
-    bindAnnoSection();
+    addCardAnnoButtons(el);
+    try { bindAnnoSection(); } catch (e) { console.warn("标注渲染失败（不影响图表与导航）：", e); }
+    updateCardCounts();
     renderCharts(page);
     markNav();
     document.getElementById("topTitle").textContent = pageTitle(page);
@@ -244,25 +246,161 @@
 
   function plain(t) { return '<div class="plain"><span class="t">🗣️ Jay大白话：</span>' + t + "</div>"; }
 
-  /* ---------- 标注 ---------- */
-  function annoSection(pageKey) {
+  /* ---------- 标注（文字级锚定） ---------- */
+  /* UI 元素（卡片标注按钮/标注列表）不参与正文偏移计算 */
+  function isUi(n) {
+    var p = n.parentElement;
+    if (!p) return false;
+    return !!(p.closest(".card-anno") || p.closest("#annoCard") || p.closest(".anno-hl"));
+  }
+  function absOffset(node, off) {
+    var n = 0, walker = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null), cur;
+    while ((cur = walker.nextNode())) {
+      if (isUi(cur)) continue;
+      if (cur === node) return n + off;
+      n += cur.nodeValue.length;
+    }
+    return -1;
+  }
+  function snapRange(r) {
+    var sc = r.startContainer, ec = r.endContainer;
+    if (sc.nodeType === 1 && r.startOffset < sc.childNodes.length) sc = sc.childNodes[r.startOffset];
+    if (ec.nodeType === 1 && r.endOffset > 0) ec = ec.childNodes[Math.min(r.endOffset, ec.childNodes.length) - 1];
+    var sn = sc.nodeType === 3 ? sc : sc.firstChild, en = ec.nodeType === 3 ? ec : ec.lastChild;
+    if (!sn || !en) return null;
+    return { sn: sn, so: r.startOffset, en: en, eo: r.endOffset };
+  }
+  function captureSel() {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+    var r = sel.getRangeAt(0);
+    if (!document.getElementById("main").contains(r.commonAncestorContainer)) return null;
+    var pn = r.commonAncestorContainer.nodeType === 3 ? r.commonAncestorContainer.parentElement : r.commonAncestorContainer;
+    if (pn && pn.closest("#annoCard")) return null; /* 标注列表本身不再被标注 */
+    var s = snapRange(r);
+    if (!s) return null;
+    var so = absOffset(s.sn, s.so), eo = absOffset(s.en, s.eo);
+    if (so < 0 || eo <= so) return null;
+    var text = sel.toString().replace(/\s+/g, " ").trim();
+    if (!text) return null;
+    return { start: so, end: Math.min(eo, so + 2000), quote: text.slice(0, 160) };
+  }
+  function findAnchor(a) {
+    var root = document.getElementById("main");
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n = 0, cur;
+    while ((cur = walker.nextNode())) {
+      if (isUi(cur)) continue;
+      var len = cur.nodeValue.length;
+      if (n + len > a.start) return { node: cur, off: a.start - n };
+      n += len;
+    }
+    return null;
+  }
+  function absStart(node, off) {
+    var n = 0, w = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null), c;
+    while ((c = w.nextNode())) {
+      if (isUi(c)) continue;
+      if (c === node) return n + off;
+      n += c.nodeValue.length;
+    }
+    return n;
+  }
+  function walkSegments(startNode, startOff, endAbs) {
+    var out = [], cn = startNode, co = startOff, remaining = endAbs - absStart(startNode, startOff), guard = 0;
+    var walker = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null);
+    while (remaining > 0 && cn && guard++ < 5000) {
+      var take = Math.min(cn.nodeValue.length - co, remaining);
+      out.push({ node: cn, start: co, end: co + take, text: cn.nodeValue.substr(co, take) });
+      remaining -= take; co += take;
+      if (co >= cn.nodeValue.length) {
+        walker.currentNode = cn;
+        var nx = null, t;
+        while ((t = walker.nextNode())) { if (!isUi(t)) { nx = t; break; } }
+        cn = nx; co = 0;
+      }
+    }
+    return out;
+  }
+  function renderHighlights(pageKey) {
+    var items = loadAnno()[pageKey] || [];
+    /* 先清除旧高亮 */
+    document.querySelectorAll(".anno-hl").forEach(function (el) {
+      var p = el.parentNode; p.replaceChild(document.createTextNode(el.textContent), el); p.normalize();
+    });
+    items.filter(function (it) { return it.a && it.a.start != null; }).sort(function (x, y) { return y.a.start - x.a.start; }).forEach(function (it) {
+      var at = findAnchor(it.a);
+      if (!at) return;
+      var segs = walkSegments(at.node, at.off, it.a.end);
+      var range = document.createRange();
+      segs.forEach(function (s, i) {
+        if (!s.text) return;
+        try {
+          range.setStart(s.node, s.start); range.setEnd(s.node, s.end);
+          var wrap = document.createElement("span");
+          wrap.className = "anno-hl";
+          wrap.setAttribute("data-anno-id", it.id);
+          if (i === 0) wrap.setAttribute("data-anno-first", "1");
+          wrap.title = "📝 " + it.text.slice(0, 60) + (it.text.length > 60 ? "…" : "");
+          range.surroundContents(wrap);
+        } catch (e) {}
+      });
+    });
+    document.querySelectorAll(".anno-hl").forEach(function (el) {
+      el.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        var id = el.getAttribute("data-anno-id");
+        var item = document.querySelector('.anno-item[data-anno="' + id + '"]');
+        if (item) flashCard(item);
+      });
+    });
+  }
+  function flashCard(el) {
+    if (!el) return;
+    el.classList.add("flash");
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setTimeout(function () { el.classList.remove("flash"); }, 2600);
+  }
+  function scrollToAnchor(a) {
+    var at = findAnchor(a);
+    if (!at) { flashCard(document.getElementById("annoCard")); return; }
+    var r = document.createRange();
+    try { r.setStart(at.node, Math.min(at.off, at.node.nodeValue.length)); r.collapse(true); } catch (e) { flashCard(document.getElementById("annoCard")); return; }
+    var probe = document.createElement("span");
+    r.insertNode(probe);
+    var host = probe.parentNode && (probe.parentNode.closest ? probe.parentNode.closest(".card") : null);
+    probe.remove();
+    flashCard(host || document.getElementById("annoCard"));
+  }
+  function buildAnnoList(pageKey) {
     var a = loadAnno()[pageKey] || [];
-    var h = '<div class="card" id="annoCard"><h2>本页标注 <small>' + (a.length ? a.length + " 条" : "暂无") + '</small></h2><div class="sub">标注保存在本机浏览器（localStorage）。换设备或换浏览器不共享；需要汇总时点「导出全部标注」把文件发给助理归档。</div>';
-    if (!a.length) h += '<p style="font-size:13px;color:#5b6b7c">点右下角「📝 写标注」即可针对本页内容留下你的判断、待办或质疑。</p>';
+    var h = "";
+    if (!a.length) h = '<p style="font-size:13px;color:#5b6b7c">选中页面里的任意一段数据/文字 → 点浮出的「📝 标注此段」；或点每张卡片右上角的 📝 针对整卡写标注。</p>';
     a.slice().reverse().forEach(function (it) {
       var t = new Date(it.ts);
       var time = t.toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
-      h += '<div class="anno-item"><button class="del" data-del="' + it.id + '">删除</button><div class="meta"><span class="anchor-badge">' + esc(pageTitle(pageKey)) + "</span><span>" + time + "</span></div><div class=\"body\">" + esc(it.text) + "</div></div>";
+      var scope = it.a && it.a.quote ? '钉在文字：' : (it.card ? '钉在卡片' : '整页');
+      h += '<div class="anno-item" data-anno="' + it.id + '">';
+      h += '<button class="del" data-del="' + it.id + '">删除</button>';
+      if (it.a && it.a.quote) h += '<button class="loc" data-loc="' + it.id + '">定位 ↩</button>';
+      h += '<div class="meta"><span class="anchor-badge">' + esc(scope) + "</span><span>" + time + "</span></div>";
+      if (it.a && it.a.quote) h += '<div class="quote-src">「' + esc(it.a.quote) + (it.a.quote.length >= 160 ? "…" : "") + "」</div>";
+      h += '<div class="body">' + esc(it.text) + "</div></div>";
     });
+    return h;
+  }
+  function annoSection(pageKey) {
+    var a = loadAnno()[pageKey] || [];
+    var h = '<div class="card" id="annoCard"><h2>本页标注 <small>' + (a.length ? a.length + " 条" : "暂无") + '</small></h2><div class="sub">标注保存在本机浏览器（localStorage），可点「导出全部标注」备份。换页/换设备不共享。</div>';
+    h += '<div id="annoList">' + buildAnnoList(pageKey) + "</div>";
     h += '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap" class="noprint">';
-    h += '<button id="annoOpen2" style="border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 16px;cursor:pointer;font-size:13.5px">📝 写标注</button>';
+    h += '<button id="annoOpen2" style="border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 16px;cursor:pointer;font-size:13.5px">📝 整页标注</button>';
     h += '<button id="annoExport" style="border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 16px;cursor:pointer;font-size:13.5px">⬇ 导出全部标注（JSON）</button>';
     h += "</div></div>";
     return h;
   }
   function bindAnnoSection() {
     var o2 = document.getElementById("annoOpen2");
-    if (o2) o2.addEventListener("click", openModal);
+    if (o2) o2.addEventListener("click", function () { openModal(null, null); });
     var ex = document.getElementById("annoExport");
     if (ex) ex.addEventListener("click", function () {
       var blob = new Blob([JSON.stringify(loadAnno(), null, 2)], { type: "application/json" });
@@ -274,17 +412,97 @@
     });
     document.querySelectorAll("[data-del]").forEach(function (b) {
       b.addEventListener("click", function () {
+        var id = b.getAttribute("data-del");
         var all = loadAnno();
-        all[currentPage] = (all[currentPage] || []).filter(function (it) { return it.id !== b.getAttribute("data-del"); });
+        all[currentPage] = (all[currentPage] || []).filter(function (it) { return it.id !== id; });
         saveAnno(all); go(currentPage);
       });
     });
+    document.querySelectorAll("[data-loc]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var id = b.getAttribute("data-loc");
+        var it = (loadAnno()[currentPage] || []).find(function (x) { return x.id === id; });
+        if (it && it.a) scrollToAnchor(it.a);
+      });
+    });
+    renderHighlights(currentPage);
+    /* 锚点失效降级：原文已变找不到位置的标注，徽标改提示、隐藏定位钮 */
+    var itemsNow = loadAnno()[currentPage] || [];
+    itemsNow.forEach(function (it) {
+      if (!it.a || it.a.start == null) return;
+      var el = document.querySelector('.anno-item[data-anno="' + it.id + '"]');
+      if (!el) return;
+      if (!findAnchor(it.a)) {
+        var badge = el.querySelector(".anchor-badge");
+        if (badge) { badge.textContent = "锚点失效（原文已变）"; badge.classList.add("b-warn"); }
+        var loc = el.querySelector(".loc");
+        if (loc) loc.remove();
+      }
+    });
   }
-  function openModal() {
+  /* 选中文字 → 浮出按钮 */
+  var pendingSel = null;
+  function refreshSelBtn() {
+    var btn = document.getElementById("selBtn");
+    var sel = captureSel();
+    if (!sel) { btn.style.display = "none"; pendingSel = null; return; }
+    pendingSel = sel;
+    var r = window.getSelection().getRangeAt(0).getBoundingClientRect();
+    btn.style.display = "block";
+    var top = Math.min(window.innerHeight - 50, r.bottom + window.scrollY + 8);
+    var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - btn.offsetWidth - 10));
+    btn.style.top = top + "px";
+    btn.style.left = left + "px";
+  }
+  document.addEventListener("selectionchange", function () {
+    clearTimeout(window.__selT); window.__selT = setTimeout(refreshSelBtn, 220);
+  });
+  window.addEventListener("scroll", function () { document.getElementById("selBtn").style.display = "none"; }, { passive: true });
+  document.getElementById("selBtn").addEventListener("click", function () {
+    if (pendingSel) { openModal(null, pendingSel); }
+    document.getElementById("selBtn").style.display = "none";
+  });
+  /* 卡片级标注按钮 */
+  document.getElementById("main").addEventListener("click", function (e) {
+    var b = e.target.closest(".card-anno");
+    if (b) openModal(b.getAttribute("data-card"), null);
+  });
+  function addCardAnnoButtons(root) {
+    var used = {};
+    root.querySelectorAll(".card").forEach(function (c, i) {
+      if (c.id === "annoCard" || c.querySelector(".card-anno")) return;
+      if (!c.getAttribute("data-cid")) {
+        var h = c.querySelector("h2, h1");
+        var t = h ? h.textContent.replace(/\s+/g, "").slice(0, 14) : ("card" + i);
+        if (used[t]) t = i + "-" + t;
+        used[t] = 1;
+        c.setAttribute("data-cid", t);
+      }
+      var b = document.createElement("button");
+      b.className = "card-anno noprint";
+      b.setAttribute("data-card", c.getAttribute("data-cid"));
+      b.title = "针对这张卡写标注";
+      b.innerHTML = '📝<span class="n"></span>';
+      c.appendChild(b);
+    });
+  }
+  function updateCardCounts() {
+    var a = loadAnno()[currentPage] || [];
+    var byCard = {};
+    a.forEach(function (it) { if (it.card) byCard[it.card] = (byCard[it.card] || 0) + 1; });
+    document.querySelectorAll(".card-anno").forEach(function (b) {
+      var n = byCard[b.getAttribute("data-card")] || 0;
+      b.querySelector(".n").textContent = n ? " " + n : "";
+    });
+  }
+  function openModal(cardId, sel) {
     var m = document.getElementById("modal");
-    document.getElementById("annoPage").textContent = "页面：" + pageTitle(currentPage);
+    document.getElementById("annoPage").textContent = "页面：" + pageTitle(currentPage) + (cardId ? " · 卡片「" + cardId + "」" : "") + (sel ? " · 已选中「" + sel.quote.slice(0, 40) + "…" : "");
     document.getElementById("annoText").value = "";
     m.classList.add("open");
+    m.dataset.card = cardId || "";
+    m.dataset.hasSel = sel ? "1" : "";
+    m.dataset.sel = sel ? JSON.stringify(sel) : "";
     setTimeout(function () { document.getElementById("annoText").focus(); }, 60);
   }
   function closeModal() { document.getElementById("modal").classList.remove("open"); }
@@ -298,20 +516,27 @@
     document.getElementById("scrim").classList.toggle("show");
   });
   document.getElementById("scrim").addEventListener("click", closeSidebar);
-  document.getElementById("fab").addEventListener("click", openModal);
+  document.getElementById("fab").addEventListener("click", function () { openModal(null, null); });
   document.getElementById("annoCancel").addEventListener("click", closeModal);
   document.getElementById("modal").addEventListener("click", function (e) { if (e.target === this) closeModal(); });
   document.getElementById("annoSave").addEventListener("click", function () {
+    var m = document.getElementById("modal");
     var t = document.getElementById("annoText").value.trim();
+    var cardId = m.dataset.card || null;
+    var sel = m.dataset.hasSel === "1" ? JSON.parse(m.dataset.sel) : null;
     if (!t) { closeModal(); return; }
     var all = loadAnno();
     if (!all[currentPage]) all[currentPage] = [];
-    all[currentPage].push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ts: Date.now(), text: t });
-    saveAnno(all); closeModal(); go(currentPage);
+    var item = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ts: Date.now(), text: t };
+    if (sel) item.a = sel;
+    if (cardId) item.card = cardId;
+    all[currentPage].push(item);
+    saveAnno(all);
+    m.dataset.card = ""; m.dataset.hasSel = ""; m.dataset.sel = "";
+    closeModal(); go(currentPage);
   });
   document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
 
   buildNav();
   go("overview");
 })();
-

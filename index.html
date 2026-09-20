@@ -45,7 +45,7 @@ button{font-family:inherit}
 #scrim{display:none;position:fixed;inset:0;background:rgba(10,18,28,.5);z-index:55}
 
 /* ===== 卡片与组件 ===== */
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px;position:relative}
 .card>h2{font-size:17.5px;margin-bottom:4px;padding-left:11px;border-left:4px solid var(--gold);line-height:1.35}
 .card>h2 small{font-weight:400;color:var(--muted);font-size:12px;margin-left:8px;font-family:"PingFang SC","Microsoft YaHei",sans-serif}
 .sub{color:var(--muted);font-size:12.5px;margin:2px 0 14px;padding-left:15px}
@@ -87,6 +87,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .mini .md{font-size:11px;color:var(--muted);margin:2px 0 6px}
 .mini .vd{font-size:12.3px}
 .chart-box{position:relative;height:250px}
+.chart-box canvas{max-width:100%!important}
+.canvas-holder{min-width:0}
 .canvas-holder{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:14px}
 .canvas-holder h3{font-size:13.5px;margin-bottom:8px;color:#43566b}
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -107,6 +109,16 @@ ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
 .anno-item .meta{font-size:11.5px;color:var(--muted);margin-bottom:3px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .anno-item .body{font-size:13.6px;white-space:pre-wrap;word-break:break-word}
 .anno-item .del{float:right;background:none;border:none;color:#b23b2e;cursor:pointer;font-size:12px;padding:0}
+.anno-item .loc{float:right;background:none;border:none;color:var(--brand);cursor:pointer;font-size:12px;padding:0;margin-right:12px}
+.quote-src{color:#7a5b00;background:var(--gold-bg);border-radius:6px;padding:4px 9px;margin:6px 0;font-size:12.5px}
+.card-anno{position:absolute;top:12px;right:12px;border:1px solid var(--line);background:#fff;border-radius:8px;height:28px;padding:0 9px;cursor:pointer;font-size:13px;line-height:26px;box-shadow:0 1px 2px rgba(14,27,42,.06)}
+.card-anno:hover{border-color:var(--gold);background:var(--gold-bg)}
+.card-anno .n{font-size:11px;font-weight:700;color:#8a5b00}
+.anno-hl{background:#fff0b3;border-bottom:2px dotted var(--gold);cursor:pointer;border-radius:2px;padding:0 1px}
+.anno-hl:hover{background:#ffe9a8}
+#selBtn{position:absolute;z-index:80;display:none;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(198,142,49,.45);white-space:nowrap}
+@keyframes annoflash{0%{box-shadow:0 0 0 4px rgba(198,142,49,.75)}100%{box-shadow:0 0 0 4px rgba(198,142,49,0)}}
+.flash{animation:annoflash 1.2s ease-out 2}
 .anchor-badge{display:inline-block;background:#fdf1dd;color:#8a5b00;border-radius:6px;font-size:11px;padding:0 7px}
 #modal{position:fixed;inset:0;background:rgba(10,18,28,.55);z-index:90;display:none;align-items:flex-end;justify-content:center}
 #modal.open{display:flex}
@@ -164,7 +176,8 @@ ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
   </div>
 </div>
 
-<button id="fab" class="noprint">📝 写标注</button>
+<button id="fab" class="noprint">📝 整页标注</button>
+<button id="selBtn" class="noprint">📝 标注此段</button>
 
 <div id="modal" role="dialog" aria-modal="true">
   <div class="sheet">

@@ -1,8 +1,8 @@
-/* SUPER U 四店对比看板 · 应用层 */
+/* SUPER U 四店对比看板 · 应用层（汇总层只做平台运营分析；单店页整页嵌入原版报告） */
 (function () {
+  window.__SU_ANNO_VER = "v7-quote-guard";
   var D = window.DATA;
   var COLORS = { rongxin: "#c0392b", superushop: "#3E7096", superudisplay: "#2e7d4f", finey: "#8a6d3b" };
-  var NAMES = { rongxin: "荣欣 rongxinfixtures", superushop: "superushop 倚巍", superudisplay: "superudisplay", finey: "Finey fineystorefixture" };
   var charts = [];
   var ANNO_KEY = "su-anno-v1";
   var currentPage = "overview";
@@ -66,11 +66,13 @@
     currentPage = page;
     destroyCharts();
     var el = document.getElementById("main");
-    if (page === "overview") el.innerHTML = pageOverview();
-    else if (page === "actions") el.innerHTML = pageActions();
-    else el.innerHTML = pageStore(page);
-    el.innerHTML += annoSection(page);
+    var pageHtml = page === "overview" ? pageOverview() : page === "actions" ? pageActions() : pageStore(page);
+    el.innerHTML = pageHtml + annoSection(page);
     addCardAnnoButtons(el);
+    /* 渲染只认准宿主：汇总页在父文档即时渲染；店铺页必须等报告 iframe 装配完成后渲染，
+       否则偏移会落到父文档（report 偏移与父页正文完全对不上） */
+    if (D.stores[page]) bindStoreIframe();
+    else renderAnnos(page);
     try { bindAnnoSection(); } catch (e) { console.warn("标注渲染失败（不影响图表与导航）：", e); }
     updateCardCounts();
     renderCharts(page);
@@ -82,7 +84,7 @@
   function pageTitle(p) {
     if (p === "overview") return "集团总览与对比";
     if (p === "actions") return "集团运营调整建议";
-    return NAMES[p] || "";
+    return (D.stores[p] && D.stores[p].name) || "";
   }
 
   /* ---------- 页面：总览 ---------- */
@@ -92,14 +94,16 @@
     h += '<h1 class="serif">四家店，同一个病人：流量都够，接不住</h1>';
     h += '<p>' + esc(D.meta.window) + '。90 天四店合计广告投入约 ¥38.1 万、合计询盘 1,116 条、稳定询盘商品合计约 52 个。四店曝光均为同行 3-4 倍，但 UV→商机率全部低于或接近同行均值——<b>集团的问题不是没流量，是接不住。</b></p></div>';
 
-    h += '<div class="card"><h2>核心指标对比</h2><div class="sub">点击左侧栏切换查看各店完整诊断</div><div class="tbl-wrap"><table><thead><tr><th>指标</th><th class="num">荣欣</th><th class="num">superushop</th><th class="num">superudisplay</th><th class="num">Finey</th></tr></thead><tbody>';
+    h += '<div class="card"><h2>核心指标对比</h2><div class="sub">点击左侧栏切换查看各店完整诊断（原版报告整页嵌入）</div><div class="tbl-wrap"><table><thead><tr><th>指标</th>' +
+      D.meta.stores.map(function (k) { return '<th class="num">' + esc(D.stores[k].code) + " " + esc(storeLabel(k)) + '</th>'; }).join("") +
+      '</tr></thead><tbody>';
     D.compare.table.forEach(function (r) {
       h += "<tr><td><b>" + esc(r[0]) + "</b></td>";
       for (var i = 1; i <= 4; i++) h += '<td class="num">' + esc(r[i]) + "</td>";
       h += "</tr>";
     });
     h += "</tbody></table></div>";
-    h += '<div class="note">口径：各店「付费询盘/¥每询盘」为报告披露或按广告询盘折算；稳定询盘品口径为「连续 3 个月有询盘商品数」（倚巍为 ≥3 月口径，荣欣另有 ≥2 月估算 12-14 个）；「要设计」为 30 天会话中明确提出设计需求数。完整口径见各店报告附录。</div></div>';
+    h += '<div class="note">口径：U1=superudisplay、U2=superushop（倚巍）、U3=Finey（fineystorefixture）、U4=荣欣（rongxinfixtures）。「付费询盘/¥每询盘」为报告披露或按广告询盘折算；稳定询盘品口径为「连续 3 个月有询盘商品数」（U2 为 ≥3 月口径，U4 另有 ≥2 月估算 12-14 个）；「要设计」为 30 天会话中明确提出设计需求数。完整口径见各店嵌入报告附录。</div></div>';
 
     h += '<div class="card"><h2>四店横向四张图</h2><div class="sub">曝光/询盘/转化率/单询盘成本 · 本店数据 vs 同行参考</div><div class="chart-grid">';
     h += '<div class="canvas-holder"><h3>90 天曝光（万次）</h3><div class="chart-box"><canvas id="cExp"></canvas></div></div>';
@@ -107,85 +111,106 @@
     h += '<div class="canvas-holder"><h3>UV→商机率（%）— 全部低于同行均值</h3><div class="chart-box"><canvas id="cUv"></canvas></div></div>';
     h += '<div class="canvas-holder"><h3>约 ¥/付费询盘（越低越好）</h3><div class="chart-box"><canvas id="cCost"></canvas></div></div>';
     h += "</div>";
-    h += '<div class="note">UV→商机率：荣欣 3.0%（报告内另有 5.8% 口径）/ superushop 4.9% / superudisplay 5.99%（均值 6.74%）/ Finey 2.99%（均值 6.52%）；同行均值参考条取 6.0% 代表值，各店对标线以其报告为准。¥/付费询盘：荣欣 198 条付费询盘、superushop 124、superudisplay 100（全站推口径）、Finey 206。</div></div>';
+    h += '<div class="note">UV→商机率：U1 5.99%（均值 6.74%）/ U2 4.9% / U3 2.99%（均值 6.52%）/ U4 3.0%（报告内另有 5.8% 口径）；同行均值参考条取 6.0% 代表值，各店对标线以其报告为准。¥/付费询盘：U1 100 条付费询盘（全站推口径）、U2 124、U3 206、U4 198。</div></div>';
 
-    h += '<div class="card"><h2>四店同病：五个集团级规律</h2><div class="sub">单店各自的问题见各店页签；以下为跨店重复出现、需要集团统一解决的</div><div class="grid2">';
+    h += '<div class="card"><h2>四店同病：四个集团级规律</h2><div class="sub">单店各自的问题见各店页签的完整报告；以下为跨店重复出现、需要集团统一解决的</div><div class="grid2">';
     D.compare.patterns.forEach(function (p, i) {
       h += '<div class="pat"><h3>' + (i + 1) + ". " + esc(p.t) + " " + judgeBadge(p.tag) + "</h3><p>" + esc(p.d) + "</p></div>";
     });
     h += "</div>" + plain(D.compare.plain) + "</div>";
 
     h += '<div class="card"><h2>下一步</h2><div class="sub">集团级 P0/P1/P2 调整建议已单列一页</div>';
-    h += '<ul class="tick good"><li><b>集团运营调整建议</b>：承诺台账 / 广告止血 / 时区排班 / 设计 SLA / 新品 SOP —— 见左侧「集团运营调整建议」</li>';
-    h += "<li><b>单店深挖</b>：每家店的完整八章诊断结论、逐计划广告明细、子账号红黑榜、P0/P1/P2 —— 见左侧四家店铺页签</li></ul></div>";
+    h += '<ul class="tick good"><li><b>集团运营调整建议</b>：广告止血 / 时区排班 / 新品冷启动 SOP / 设计需求 SLA / 骨干商品池 —— 见左侧「集团运营调整建议」</li>';
+    h += "<li><b>单店深挖</b>：每家店的完整八章诊断（运营基础、广告、询盘、竞品、P0/P1/P2、附录）已整页嵌入 —— 见左侧四家店铺页签</li></ul></div>";
     return h;
   }
 
-  /* ---------- 页面：单店 ---------- */
+  function storeLabel(k) {
+    var map = { superudisplay: "superudisplay", superushop: "superushop", finey: "Finey", rongxin: "荣欣" };
+    return map[k] || k;
+  }
+
+  /* ---------- 单店报告 iframe 装配（同源整页嵌入，标注引擎接管报告内文字） ---------- */
+  function bindStoreIframe() {
+    var frame = document.querySelector("#main iframe.report-frame");
+    if (!frame) return;
+    var bound = false;
+    var setup = function () {
+      if (bound) return;
+      var win = frame.contentWindow, doc = frame.contentDocument;
+      /* about:blank 初始文档同样 readyState=complete，必须排除，等真实报告文档 */
+      if (!win || !doc || !doc.body || doc.URL === "about:blank") return;
+      bound = true;
+      try {
+        /* 报告自带深底样式，嵌入时统一为白底，避免与看板割裂 */
+        var st = doc.createElement("style");
+        st.textContent = "html,body{background:#fff!important}";
+        doc.head.appendChild(st);
+        var hd = doc.querySelector("h1");
+        if (hd && !hd.getAttribute("data-cid")) hd.setAttribute("data-cid", "report-h1");
+      } catch (e) {}
+      try { renderAnnos(currentPage); } catch (e) {}
+      /* iframe 内选区 → 父页浮出标注按钮（fixed 定位，跨 iframe 坐标换算见 refreshSelBtn） */
+      try {
+        doc.addEventListener("selectionchange", function () {
+          clearTimeout(win.__selT); win.__selT = setTimeout(function () { refreshSelBtn(win); }, 220);
+        });
+        win.addEventListener("scroll", function () { document.getElementById("selBtn").style.display = "none"; }, { passive: true });
+      } catch (e) {}
+    };
+    frame.addEventListener("load", setup);
+    setTimeout(setup, 400); /* 兜底：load 已错过时装配（about:blank 会被上方守卫跳过） */
+  }
+
+  /* ---------- 标注宿主工具 ---------- */
+  /* 宿主文档实时从 DOM 推导，不读缓存变量：店铺页只认「活着的报告 iframe 文档」，
+     报告未就绪时返回 null —— 任何渲染/锚点调用都据此安全跳过，结构上杜绝把
+     报告偏移错画到父文档上 */
+  function annoDoc() {
+    if (D.stores[currentPage]) {
+      var f = document.querySelector("#main iframe.report-frame");
+      if (f && f.contentDocument && f.contentDocument.body && f.contentDocument.URL !== "about:blank") return f.contentDocument;
+      return null;
+    }
+    return document;
+  }
+  function annoRoot() {
+    var d = annoDoc();
+    if (!d) return null;
+    return d.getElementById("main") || d.body;
+  }
+  /* 统一渲染入口：无宿主（店铺页 iframe 未就绪）直接跳过 */
+  function renderAnnos(pageKey) {
+    if (!annoDoc()) return;
+    try { renderHighlights(pageKey); } catch (e) {}
+    try { markInvalidAnchors(pageKey); } catch (e) {}
+  }
+  function markInvalidAnchors(pageKey) {
+    (loadAnno()[pageKey] || []).forEach(function (it) {
+      if (!it.a || it.a.start == null) return;
+      var el = document.querySelector('.anno-item[data-anno="' + it.id + '"]');
+      if (!el) return;
+      if (!findAnchor(it.a)) {
+        var badge = el.querySelector(".anchor-badge");
+        if (badge) { badge.textContent = "锚点失效（原文已变）"; badge.classList.add("b-warn"); }
+        var loc = el.querySelector(".loc");
+        if (loc) loc.remove();
+      }
+    });
+  }
+
+  /* ---------- 页面：单店（整页嵌入原版报告） ---------- */
   function pageStore(k) {
     var s = D.stores[k];
     var h = '';
-    h += '<div class="card hero" style="border-top:4px solid ' + s.color + '"><div class="k">' + esc(s.company) + " · " + esc(s.login) + '</div>';
+    h += '<div class="card hero" style="border-top:4px solid ' + s.color + '"><div class="k">' + esc(s.code) + " · " + esc(s.company) + " · " + esc(s.login) + '</div>';
     h += '<h1 class="serif">' + esc(s.name) + '</h1>';
     h += '<p><span class="mode-chip" style="background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff">' + esc(s.mode) + "</span></p></div>";
 
-    h += '<div class="card"><h2>KPI 总览</h2><div class="sub">90 天基线（2026-06-20 ~ 09-17）</div><div class="kpis">';
-    s.kpis.forEach(function (x) { h += '<div class="kpi"><div class="l">' + esc(x.label) + '</div><div class="v">' + esc(x.value) + '</div><div class="n">' + esc(x.note) + "</div></div>"; });
-    h += "</div></div>";
-
-    h += '<div class="card"><h2>大盘判断</h2><p class="verdict">' + esc(s.verdict) + "</p>";
-    h += '<div class="grid2" style="margin-top:14px"><div><h3 style="font-size:14px;margin-bottom:6px">▲ 三个最要紧的问题</h3><ul class="tick danger">';
-    s.problems.forEach(function (p) { h += "<li>" + esc(p) + "</li>"; });
-    h += '</ul></div><div><h3 style="font-size:14px;margin-bottom:6px">◆ 三个最值钱的机会</h3><ul class="tick good">';
-    s.chances.forEach(function (p) { h += "<li>" + esc(p) + "</li>"; });
-    h += "</ul></div></div>" + plain(s.plain) + "</div>";
-
-    h += '<div class="card"><h2>转化漏斗 <small>vs 同行</small></h2><div class="tbl-wrap"><table><thead><tr><th>环节</th><th class="num">本店 90 天</th><th class="num">对标</th><th>判定</th><th>说明</th></tr></thead><tbody>';
-    s.funnel.forEach(function (r) {
-      h += "<tr><td><b>" + esc(r.label) + "</b></td><td class=\"num\"><b>" + esc(r.v) + "</b></td><td class=\"num\">" + esc(r.peer) + "</td><td>" + judgeBadge(r.judge) + "</td><td>" + esc(r.note) + "</td></tr>";
-    });
-    h += "</tbody></table></div></div>";
-
-    h += '<div class="card"><h2>广告 <small>' + esc(s.ads.total) + "</small></h2><div class=\"sub\">逐计划：花费 → 询盘 → 商机成本</div><div class=\"tbl-wrap\"><table><thead><tr><th>计划</th><th class=\"num\">花费</th><th class=\"num\">询盘</th><th class=\"num\">约¥/商机</th><th>判定</th></tr></thead><tbody>";
-    s.ads.plans.forEach(function (r) {
-      h += "<tr><td>" + esc(r[0]) + '</td><td class="num">' + esc(r[1]) + '</td><td class="num">' + esc(r[2]) + '</td><td class="num">' + esc(r[3]) + "</td><td>" + esc(r[4]) + "</td></tr>";
-    });
-    h += "</tbody></table></div>";
-    h += '<div class="note">总花费 ' + esc(s.ads.total) + "；" + esc(s.ads.perEnq) + "。</div>";
-    h += '<p style="font-size:13px;color:#43566b;margin-top:10px">' + esc(s.ads.note) + "</p></div>";
-
-    h += '<div class="card"><h2>询盘画像 <small>' + esc(s.enq.total) + " · " + esc(s.enq.hot) + "</small></h2>";
-    h += '<div class="grid2"><div class="canvas-holder"><h3>需求 4 分型（会话数）</h3><div class="chart-box"><canvas id="cDemand"></canvas></div></div>';
-    h += '<div><h3 style="font-size:13.5px;margin-bottom:8px;color:#43566b">客户画像分布</h3><div class="tbl-wrap"><table><thead><tr><th>类型</th><th class="num">会话</th><th class="num">占比</th></tr></thead><tbody>';
-    s.enq.persona.forEach(function (r) { h += "<tr><td>" + esc(r[0]) + '</td><td class="num">' + esc(r[1]) + '</td><td class="num">' + esc(r[2]) + "</td></tr>"; });
-    h += "</tbody></table></div></div></div>";
-
-    h += '<h3 style="font-size:14px;margin:16px 0 8px">平台运营问题清单</h3><div class="tbl-wrap"><table><thead><tr><th>#</th><th>问题</th><th>数据证据</th><th>运营动作</th></tr></thead><tbody>';
-    s.enq.issues.forEach(function (r, i) {
-      h += "<tr><td>" + (i + 1) + "</td><td><b>" + esc(r[0]) + "</b></td><td>" + esc(r[1]) + "</td><td>" + esc(r[2]) + "</td></tr>";
-    });
-    h += "</tbody></table></div></div>";
-
-    h += '<div class="card"><h2>子账号表现</h2><div class="tbl-wrap"><table><thead><tr><th>账号</th><th class="num">会话</th><th class="num">高意向</th><th class="num">响应</th><th>判定</th></tr></thead><tbody>';
-    s.team.rows.forEach(function (r) {
-      h += "<tr><td>" + esc(r[0]) + '</td><td class="num">' + esc(r[1]) + '</td><td class="num">' + esc(r[2]) + '</td><td class="num">' + esc(r[3]) + "</td><td>" + esc(r[4]) + "</td></tr>";
-    });
-    h += "</tbody></table></div>";
-    h += '<div class="note">' + esc(s.team.note) + "</div>";
-    h += '<p style="font-size:13px;color:#43566b;margin-top:10px"><b>竞品对标：</b>' + esc(s.competitor) + "</p></div>";
-
-    h += '<div class="card"><h2>行动计划 <small>P0 两周内 / P1 本月 / P2 本季度</small></h2>';
-    ["P0", "P1", "P2"].forEach(function (lv) {
-      h += '<div class="plist" style="margin-bottom:14px">';
-      s.actions[lv].forEach(function (a, i) {
-        h += '<div class="pc ' + lv.toLowerCase() + '"><span class="tag">' + lv + "-" + (i + 1) + "</span><h3>" + esc(a.t) + "</h3>";
-        h += '<div class="row"><b class="k">解决什么：</b>' + esc(a.p) + "</div>";
-        h += '<div class="row"><b class="k">做什么：</b>' + esc(a.a) + "</div>";
-        h += '<div class="row"><b class="k">怎么验证：</b>' + esc(a.v) + "</div></div>";
-      });
-      h += "</div>";
-    });
-    h += '<div class="note">稳定询盘商品：' + esc(JSON.stringify(s.stable).replace(/[{}"]/g, "").replace(/,/g, " · ")) + "</div></div>";
+    h += '<div class="card"><h2>' + esc(s.code) + " 完整诊断报告 <small>2026-09-19 原版 · 八章全量</small></h2>";
+    h += '<div class="sub">' + esc(s.reportNote) + '　<a href="' + esc(s.report) + '" target="_blank" rel="noopener">在新窗口打开完整报告 ↗</a></div>';
+    h += '<div class="embed-wrap"><iframe class="report-frame" src="' + esc(s.report) + '" title="' + esc(s.name) + ' 完整报告"></iframe></div>';
+    h += '<div class="note">报告内文字如需标注，可先「在新窗口打开」。本页标注卡仅记录看板层的标注。</div></div>';
     return h;
   }
 
@@ -229,18 +254,6 @@
       mk("cUv", c.uvRate.labels, c.uvRate.values, c.uvRate.values.map(function (v, i) { return i === c.uvRate.values.length - 1 ? "#9aa9b8" : storeColors()[i]; }), "%");
       mk("cCost", c.cost.labels, c.cost.values, storeColors(), "");
     }
-    if (D.stores[page]) {
-      var dm = D.stores[page].enq.demand;
-      reg(new Chart(document.getElementById("cDemand"), {
-        type: "bar",
-        data: { labels: dm.map(function (r) { return r[0]; }), datasets: [{ data: dm.map(function (r) { return parseFloat(r[1]) || 0; }), backgroundColor: "#3E7096", borderRadius: 6, maxBarThickness: 22 }] },
-        options: {
-          indexAxis: "y", responsive: true, maintainAspectRatio: false,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (ctx) { return ctx.parsed.x + " 会话（" + dm[ctx.dataIndex][2] + "）"; } } } },
-          scales: { x: { beginAtZero: true, grid: { color: "#edf1f5" } }, y: { grid: { display: false } } }
-        }
-      }));
-    }
   }
   function storeColors() { return D.meta.stores.map(function (k) { return COLORS[k]; }); }
 
@@ -254,7 +267,9 @@
     return !!(p.closest(".card-anno") || p.closest("#annoCard") || p.closest(".anno-hl"));
   }
   function absOffset(node, off) {
-    var n = 0, walker = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null), cur;
+    var root = annoRoot();
+    if (!root) return -1;
+    var n = 0, walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), cur;
     while ((cur = walker.nextNode())) {
       if (isUi(cur)) continue;
       if (cur === node) return n + off;
@@ -270,11 +285,13 @@
     if (!sn || !en) return null;
     return { sn: sn, so: r.startOffset, en: en, eo: r.endOffset };
   }
-  function captureSel() {
-    var sel = window.getSelection();
+  function captureSel(srcWin) {
+    srcWin = srcWin || window;
+    if (!annoRoot()) return null;
+    var sel = srcWin.getSelection();
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
     var r = sel.getRangeAt(0);
-    if (!document.getElementById("main").contains(r.commonAncestorContainer)) return null;
+    if (!annoRoot().contains(r.commonAncestorContainer)) return null;
     var pn = r.commonAncestorContainer.nodeType === 3 ? r.commonAncestorContainer.parentElement : r.commonAncestorContainer;
     if (pn && pn.closest("#annoCard")) return null; /* 标注列表本身不再被标注 */
     var s = snapRange(r);
@@ -283,10 +300,34 @@
     if (so < 0 || eo <= so) return null;
     var text = sel.toString().replace(/\s+/g, " ").trim();
     if (!text) return null;
+    /* 保存前回验：偏移解出的文字必须等于选区原文，不一致说明宿主错乱，拒绝保存 */
+    try {
+      var chk = anchorText(so, Math.min(eo, so + 2000));
+      if (chk != null && normWs(chk) !== normWs(text)) return null;
+    } catch (e) {}
     return { start: so, end: Math.min(eo, so + 2000), quote: text.slice(0, 160) };
   }
+  /* 取当前宿主里 [start,end) 的文本，用于偏移回验 */
+  function anchorText(start, end) {
+    var root = annoRoot();
+    if (!root) return null;
+    var n = 0, out = "", walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), cur;
+    while ((cur = walker.nextNode())) {
+      if (isUi(cur)) continue;
+      var len = cur.nodeValue.length;
+      if (n + len > start) {
+        var from = Math.max(0, start - n), to = Math.min(len, end - n);
+        out += cur.nodeValue.substring(from, to);
+        if (n + len >= end) break;
+      }
+      n += len;
+    }
+    return out;
+  }
+  function normWs(s) { return String(s || "").replace(/\s+/g, ""); }
   function findAnchor(a) {
-    var root = document.getElementById("main");
+    var root = annoRoot();
+    if (!root) return null;
     var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n = 0, cur;
     while ((cur = walker.nextNode())) {
       if (isUi(cur)) continue;
@@ -297,7 +338,9 @@
     return null;
   }
   function absStart(node, off) {
-    var n = 0, w = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null), c;
+    var root = annoRoot();
+    if (!root) return 0;
+    var n = 0, w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), c;
     while ((c = w.nextNode())) {
       if (isUi(c)) continue;
       if (c === node) return n + off;
@@ -306,8 +349,10 @@
     return n;
   }
   function walkSegments(startNode, startOff, endAbs) {
+    var root = annoRoot();
+    if (!root) return [];
     var out = [], cn = startNode, co = startOff, remaining = endAbs - absStart(startNode, startOff), guard = 0;
-    var walker = document.createTreeWalker(document.getElementById("main"), NodeFilter.SHOW_TEXT, null);
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
     while (remaining > 0 && cn && guard++ < 5000) {
       var take = Math.min(cn.nodeValue.length - co, remaining);
       out.push({ node: cn, start: co, end: co + take, text: cn.nodeValue.substr(co, take) });
@@ -324,19 +369,24 @@
   function renderHighlights(pageKey) {
     var items = loadAnno()[pageKey] || [];
     /* 先清除旧高亮 */
-    document.querySelectorAll(".anno-hl").forEach(function (el) {
+    annoDoc().querySelectorAll(".anno-hl").forEach(function (el) {
       var p = el.parentNode; p.replaceChild(document.createTextNode(el.textContent), el); p.normalize();
     });
     items.filter(function (it) { return it.a && it.a.start != null; }).sort(function (x, y) { return y.a.start - x.a.start; }).forEach(function (it) {
       var at = findAnchor(it.a);
       if (!at) return;
+      /* 原文回验：偏移解出的文字必须与保存时的选区原文一致，否则拒绝绘制（防错宿主） */
+      try {
+        var got = anchorText(it.a.start, it.a.end);
+        if (got != null && normWs(got) !== normWs(it.a.quote)) return;
+      } catch (e) {}
       var segs = walkSegments(at.node, at.off, it.a.end);
-      var range = document.createRange();
+      var range = annoDoc().createRange();
       segs.forEach(function (s, i) {
         if (!s.text) return;
         try {
           range.setStart(s.node, s.start); range.setEnd(s.node, s.end);
-          var wrap = document.createElement("span");
+          var wrap = annoDoc().createElement("span");
           wrap.className = "anno-hl";
           wrap.setAttribute("data-anno-id", it.id);
           if (i === 0) wrap.setAttribute("data-anno-first", "1");
@@ -345,7 +395,7 @@
         } catch (e) {}
       });
     });
-    document.querySelectorAll(".anno-hl").forEach(function (el) {
+    annoDoc().querySelectorAll(".anno-hl").forEach(function (el) {
       el.addEventListener("click", function (ev) {
         ev.stopPropagation();
         var id = el.getAttribute("data-anno-id");
@@ -363,9 +413,9 @@
   function scrollToAnchor(a) {
     var at = findAnchor(a);
     if (!at) { flashCard(document.getElementById("annoCard")); return; }
-    var r = document.createRange();
+    var r = annoDoc().createRange();
     try { r.setStart(at.node, Math.min(at.off, at.node.nodeValue.length)); r.collapse(true); } catch (e) { flashCard(document.getElementById("annoCard")); return; }
-    var probe = document.createElement("span");
+    var probe = annoDoc().createElement("span");
     r.insertNode(probe);
     var host = probe.parentNode && (probe.parentNode.closest ? probe.parentNode.closest(".card") : null);
     probe.remove();
@@ -425,37 +475,31 @@
         if (it && it.a) scrollToAnchor(it.a);
       });
     });
-    renderHighlights(currentPage);
-    /* 锚点失效降级：原文已变找不到位置的标注，徽标改提示、隐藏定位钮 */
-    var itemsNow = loadAnno()[currentPage] || [];
-    itemsNow.forEach(function (it) {
-      if (!it.a || it.a.start == null) return;
-      var el = document.querySelector('.anno-item[data-anno="' + it.id + '"]');
-      if (!el) return;
-      if (!findAnchor(it.a)) {
-        var badge = el.querySelector(".anchor-badge");
-        if (badge) { badge.textContent = "锚点失效（原文已变）"; badge.classList.add("b-warn"); }
-        var loc = el.querySelector(".loc");
-        if (loc) loc.remove();
-      }
-    });
+    renderAnnos(currentPage);
   }
-  /* 选中文字 → 浮出按钮 */
+  /* 选中文字 → 浮出按钮（fixed 定位：iframe 内选区坐标 + iframe 偏移可直接换算） */
   var pendingSel = null;
-  function refreshSelBtn() {
+  function refreshSelBtn(srcWin) {
+    srcWin = srcWin || window;
     var btn = document.getElementById("selBtn");
-    var sel = captureSel();
+    var sel = captureSel(srcWin);
     if (!sel) { btn.style.display = "none"; pendingSel = null; return; }
     pendingSel = sel;
-    var r = window.getSelection().getRangeAt(0).getBoundingClientRect();
+    var range = srcWin.getSelection().getRangeAt(0);
+    var r = range.getBoundingClientRect();
+    var ox = 0, oy = 0;
+    if (srcWin !== window) {
+      var rect = srcWin.frameElement.getBoundingClientRect();
+      ox = rect.left; oy = rect.top;
+    }
     btn.style.display = "block";
-    var top = Math.min(window.innerHeight - 50, r.bottom + window.scrollY + 8);
-    var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + window.innerWidth - btn.offsetWidth - 10));
+    var top = Math.min(srcWin.innerHeight + oy - 50, r.bottom + oy + 8);
+    var left = Math.max(8, Math.min(r.left + ox, srcWin.innerWidth + ox - btn.offsetWidth - 10));
     btn.style.top = top + "px";
     btn.style.left = left + "px";
   }
   document.addEventListener("selectionchange", function () {
-    clearTimeout(window.__selT); window.__selT = setTimeout(refreshSelBtn, 220);
+    clearTimeout(window.__selT); window.__selT = setTimeout(function () { refreshSelBtn(window); }, 220);
   });
   window.addEventListener("scroll", function () { document.getElementById("selBtn").style.display = "none"; }, { passive: true });
   document.getElementById("selBtn").addEventListener("click", function () {

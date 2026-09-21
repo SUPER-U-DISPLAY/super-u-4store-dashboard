@@ -3,8 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SUPER U 四店经营对比看板</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<title>SUPER U 四店经营对比看板</title><script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --navy:#0e1b2a; --navy2:#16283c; --gold:#C68E31; --gold-bg:#fdf6e8;
@@ -102,6 +101,10 @@ ul.tick.danger li::marker{content:"▲ ";color:var(--bad);font-size:.8em}
 ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
 .mode-chip{display:inline-block;background:#eef3f8;border:1px solid #d7e2ec;color:#3a556e;border-radius:8px;font-size:11.5px;padding:1px 9px}
 
+/* ===== 原版报告整页嵌入 ===== */
+.embed-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.report-frame{display:block;width:100%;height:calc(100dvh - 130px);min-height:560px;border:none;background:#fff}
+
 /* ===== 标注 ===== */
 #fab{position:fixed;right:22px;bottom:26px;z-index:70;background:var(--gold);color:#fff;border:none;border-radius:99px;padding:11px 20px;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(198,142,49,.45);cursor:pointer}
 #fab:hover{filter:brightness(1.06)}
@@ -116,7 +119,7 @@ ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
 .card-anno .n{font-size:11px;font-weight:700;color:#8a5b00}
 .anno-hl{background:#fff0b3;border-bottom:2px dotted var(--gold);cursor:pointer;border-radius:2px;padding:0 1px}
 .anno-hl:hover{background:#ffe9a8}
-#selBtn{position:absolute;z-index:80;display:none;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(198,142,49,.45);white-space:nowrap}
+#selBtn{position:fixed;z-index:80;display:none;background:var(--gold);color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(198,142,49,.45);white-space:nowrap}
 @keyframes annoflash{0%{box-shadow:0 0 0 4px rgba(198,142,49,.75)}100%{box-shadow:0 0 0 4px rgba(198,142,49,0)}}
 .flash{animation:annoflash 1.2s ease-out 2}
 .anchor-badge{display:inline-block;background:#fdf1dd;color:#8a5b00;border-radius:6px;font-size:11px;padding:0 7px}
@@ -162,7 +165,8 @@ ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
     <div class="logo">
       <div class="en">SUPER U · Group</div>
       <div class="zh serif">四店经营对比看板</div>
-      <div class="win">基线 2026-06-20 ~ 09-17（90 天）<br>报告日 2026-09-19 · 询盘明细窗口 30 天</div>
+      <div class="win">基线 2026-06-20 ~ 09-17（90 天）<br>U1 superudisplay · U2 superushop · U3 Finey · U4 荣欣</div>
+
     </div>
     <nav id="nav"></nav>
   </aside>
@@ -191,7 +195,7 @@ ul.tick.good li::marker{content:"◆ ";color:var(--ok);font-size:.8em}
   </div>
 </div>
 
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

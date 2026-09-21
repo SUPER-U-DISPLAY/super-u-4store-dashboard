@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>superudisplay 店铺经营全景诊断报告（2026-09-19）</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--blue:#3E7096;--ok:#2e7d4f;--warn:#b26a00;--bad:#c0392b;--gold:#C68E31;--line:#e3e8ee;--ink:#1f2d3a;--mute:#6b7c8c}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f7fa;color:var(--ink);font:14px/1.65 "Microsoft YaHei","PingFang SC","Hiragino Sans GB",Arial,sans-serif}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 60px}
+.hero{max-width:1100px;margin:22px auto 20px;padding:30px 28px;border-radius:16px;color:#fff;
+  background:linear-gradient(120deg,#2c4a63 0%,#3E7096 60%,#4d84ad 100%)}
+.hero h1{margin:0 0 6px;font-size:26px;letter-spacing:.5px}
+.hero .sub{opacity:.92;font-size:13.5px}
+.hero .meta{margin-top:14px;font-size:12.5px;opacity:.9;border-top:1px solid rgba(255,255,255,.25);padding-top:10px}
+section{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:16px 0}
+h2{font-size:19px;margin:0 0 4px;padding-left:11px;border-left:5px solid var(--blue)}
+h3{font-size:15.5px;margin:20px 0 8px;color:#2c4a63}
+.lead{color:var(--mute);font-size:13px;margin:6px 0 14px}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.kpi{border:1px solid var(--line);border-radius:10px;padding:12px 13px;background:#fbfdff}
+.kpi .n{font-size:20px;font-weight:700;letter-spacing:.3px}
+.kpi .l{font-size:12px;color:var(--mute);margin-top:2px}
+.kpi .d{font-size:11.5px;margin-top:6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:780px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+th,td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top;text-align:left}
+th{background:#f2f6fa;color:#2c4a63;font-weight:600;font-size:12.5px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.b{display:inline-block;padding:1px 7px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.b-ok{background:#e7f4ec;color:var(--ok);border:1px solid #bfe0cc}
+.b-warn{background:#fdf3e3;color:var(--warn);border:1px solid #f0d9ac}
+.b-bad{background:#fdecea;color:var(--bad);border:1px solid #f3c2bc}
+.b-info{background:#eaf2f8;color:var(--blue);border:1px solid #c9dced}
+.hl{background:#fdf1cf;font-weight:700;padding:0 2px}
+.plain{background:#fffdf5;border:1px dashed var(--gold);border-left:5px solid var(--gold);border-radius:10px;padding:13px 15px;margin-top:14px;font-size:13.5px}
+.plain .t{color:var(--gold);font-weight:700;margin-right:4px}
+.co-key{border-left:5px solid var(--blue);background:#f7fafd;border-radius:8px;padding:12px 14px;margin:10px 0}
+.co-risk{border-left:5px solid var(--bad);background:#fdf7f6;border-radius:8px;padding:12px 14px;margin:10px 0}
+.co-good{border-left:5px solid var(--ok);background:#f5faf7;border-radius:8px;padding:12px 14px;margin:10px 0}
+.co-info{border-left:5px solid var(--gold);background:#fffcf3;border-radius:8px;padding:12px 14px;margin:10px 0}
+.note{color:var(--mute);font-size:12px;margin-top:7px;line-height:1.55}
+canvas{max-width:100%}
+.act{border:1px solid var(--line);border-left:5px solid var(--bad);border-radius:10px;padding:12px 14px;margin:10px 0;background:#fff}
+.act.p1{border-left-color:var(--warn)}
+.act.p2{border-left-color:var(--blue)}
+.act .tag{display:inline-block;background:var(--bad);color:#fff;font-size:11.5px;font-weight:700;border-radius:5px;padding:1px 7px;margin-right:7px}
+.act.p1 .tag{background:var(--warn)}
+.act.p2 .tag{background:var(--blue)}
+.act b{color:#2c4a63}
+ul.tight{margin:6px 0 0;padding-left:20px}
+ul.tight li{margin:3px 0}
+footer{max-width:1100px;margin:18px auto 0;color:var(--mute);font-size:12px;text-align:center}
+@media print{section{break-inside:avoid}body{background:#fff}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>superudisplay 店铺经营全景诊断报告</h1>
+  <div class="sub">Guangzhou Super U Shop Fitting Ltd. ｜ 阿里国际站 ｜ 商业设备及机械 &gt; 广告设备 &gt; 展示架</div>
+  <div class="meta">数据窗口：<b>2026-06-20 ~ 2026-09-17（90 天，落至最新完整日）</b> ｜ 询盘明细：2026-08-19 ~ 2026-09-17（近 30 天） ｜ 报告生成：2026-09-19 ｜ 共 8 章，每组数据配「Jay大白话」</div>
+</div>
+
+<div class="wrap">
+
+<section>
+  <h2>一、总览：这家店到底怎么样</h2>
+  <p class="lead">先说结论：<b>这是一家“有商品底子、缺转化闭环”的店</b>——商品数（1,718 个有效品）已经接近同行优秀线，广告也敢投（90 天 ¥91,516），但钱花得散、询盘接得浅，UV 转化（5.99%）还没摸到同行均值（6.74%），90 天只新发 59 个品，是同行均值（109）的一半。</p>
+
+  <div class="kpis">
+    <div class="kpi"><div class="n">1,152,969</div><div class="l">90 天曝光</div><div class="d"><span class="b b-ok">日均 12,811 = 同行均值 3.3 倍</span></div></div>
+    <div class="kpi"><div class="n">32,410</div><div class="l">90 天点击（CTR 2.81%）</div><div class="d"><span class="b b-warn">搜索 CTR 2.15% 贴均值线</span></div></div>
+    <div class="kpi"><div class="n">21,847</div><div class="l">90 天访客 UV</div><div class="d"><span class="b b-warn">月均在 4,000~8,300 区间波动</span></div></div>
+    <div class="kpi"><div class="n">1,309 / 248</div><div class="l">90 天商机 / 询盘</div><div class="d"><span class="b b-bad">UV→商机 5.99% &lt; 均值 6.74%</span></div></div>
+    <div class="kpi"><div class="n">¥91,516</div><div class="l">90 天广告花费</div><div class="d"><span class="b b-warn">商机成本 ¥218.82</span></div></div>
+    <div class="kpi"><div class="n">59</div><div class="l">90 天新发品</div><div class="d"><span class="b b-bad">同行均值 109 / 优秀 225</span></div></div>
+  </div>
+
+  <div class="co-key">
+    <b>大盘判断：</b>曝光和商品规模是本店的长板（商品数 1,718 个，同行均值 718、优秀线 1,914）；<b>真正卡住的是“从访客到商机”这一段</b>——UV→商机 5.99%，低于同行均值 6.74%，更远低于优秀线 16.40%；同时 90 天只新发 59 个商品，货架在“老化”。广告侧 52.5% 的点击靠付费买来（全站推 17,003 / 总点击 32,410），但 ¥89,499 的全站推只换回 409 个商机、100 条询盘。
+  </div>
+
+  <div class="co-risk">
+    <b>三个最要紧的问题</b>
+    <ul class="tight">
+      <li><b>① 广告撒得太散：</b>16 个全站推计划里，7 个商机成本 ≥¥394 或干脆零产出（计划5-20260708 花了 ¥802.72、0 商机；新品加速 ¥681.98 只换 1 个商机），而最会赚钱的优品助推_20260414 只要 ¥179.84/商机。</li>
+      <li><b>② 商品层面 88.8% 在白烧：</b>可归因的 420 个有花费商品中，373 个零询盘；花钱最多的电子烟陈列柜花了 ¥7,196 只有 5 条询盘（¥1,439/条）。</li>
+      <li><b>③ 接得住、但收不了尾：</b>近 30 天 424 个会话里 37 条“我去问经理/再回复你”的承诺话术，6 个会话承诺后再无下文；首响 5 分钟达成率 44.6%，同行 20 分位线是 70.94%。</li>
+    </ul>
+  </div>
+
+  <div class="co-good">
+    <b>三个最值钱的机会</b>
+    <ul class="tight">
+      <li><b>① 澳新/加拿大是被埋掉的效率市场：</b>澳洲广告点击→询盘 1.27%、点击→商机 6.18%，均为全站最高（全站均值 2.41%），但只拿到 631 次点击。加预算 + 早班承接，是最快见效的一手。</li>
+      <li><b>② 餐饮甜品 + 药店是真正的询盘粮仓：</b>4 个月里餐饮甜品有 48 个商品出过询盘、药店/医疗 17 个、珠宝 20 个；连续 ≥3 个月稳定出询盘的 7 个品里，3 个是餐饮甜品。</li>
+      <li><b>③ 询盘质量不差，是流程在漏：</b>近 30 天高意向 93 个会话（21.9%）、51 条已进入实质阶段（金额/数量/图纸/样品/付款），主要卡在 MOQ（29 会话）与交期（15 会话）——都是可以前置到商品页的确定性信息。</li>
+    </ul>
+  </div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  这家店像个货很全、但导购不会收单的门店。<b>货架不小（1,718 个品），可是 90 天只上了 59 个新品，等于半年没换橱窗。</b>广告一个月花三万多，钱分给 16 个计划，有的计划花 800 块连一个商机都没有——<span class="hl">这不是流量问题，是分配问题</span>。询盘其实不差，30 天里 93 个高意向、51 个谈到数量图纸付款，但话说到“我去问下经理”就没下文了。<b>怎么办：</b>钱先集中到会出商机的 3 个计划（P0-1），商品砍掉纯烧钱的尾部（P0-2），承诺后 24 小时必回（P0-3）。</div>
+</section>
+
+<section>
+  <h2>二、运营基础：漏斗、节奏与商品结构</h2>
+  <p class="lead">对标口径：同行均值 / 同行优秀线来自数据参谋同周期同行分层；店铺数据为 2026-06-20~09-17 合计。</p>
+
+  <h3>2.1 四级漏斗对标</h3>
+  <table>
+    <thead><tr><th>环节</th><th class="num">本店（90 天）</th><th class="num">同行均值</th><th class="num">同行优秀</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>搜索曝光</td><td class="num">570,953</td><td class="num">日均 3,882（≈349k）</td><td class="num">日均 21,662（≈1.95M）</td><td><span class="b b-ok">高于均值 1.6 倍</span></td></tr>
+      <tr><td>搜索点击率</td><td class="num">2.15%</td><td class="num">2.15%</td><td class="num">2.46%</td><td><span class="b b-warn">贴均值线</span></td></tr>
+      <tr><td>访客 UV</td><td class="num">21,847</td><td class="num">—</td><td class="num">—</td><td><span class="b b-info">PV 42,516（人均 1.95 页）</span></td></tr>
+      <tr><td>UV→商机</td><td class="num">5.99%</td><td class="num">6.74%</td><td class="num">16.40%</td><td><span class="b b-bad">低于均值 11%</span></td></tr>
+      <tr><td>UV→询盘</td><td class="num">1.14%</td><td class="num">—</td><td class="num">—</td><td><span class="b b-warn">248 条询盘 / 21,847 UV</span></td></tr>
+      <tr><td>商机→询盘</td><td class="num">18.9%</td><td class="num">—</td><td class="num">—</td><td><span class="b b-warn">1,309 商机仅 248 条询盘</span></td></tr>
+      <tr><td>有效商品数</td><td class="num">1,718</td><td class="num">718</td><td class="num">1,914</td><td><span class="b b-ok">接近优秀线</span></td></tr>
+      <tr><td>优品数</td><td class="num">122</td><td class="num">50</td><td class="num">311</td><td><span class="b b-warn">均值 2.4 倍，但只到优秀 39%</span></td></tr>
+      <tr><td>90 天新发品</td><td class="num">59</td><td class="num">109</td><td class="num">225</td><td><span class="b b-bad">仅为均值 54%</span></td></tr>
+      <tr><td>首响 5 分钟达成率</td><td class="num">44.6%</td><td class="num">70.94%（20 分位线）</td><td class="num">—</td><td><span class="b b-bad">差 26 个百分点</span></td></tr>
+      <tr><td>平均回复时长</td><td class="num">2.22 h</td><td class="num">0.95 h（20 分位线）</td><td class="num">—</td><td><span class="b b-bad">2.3 倍于同行</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">口径说明：搜索曝光/点击来自数据参谋 90 天日粒度汇总（seImpsCnt/seClkCnt）；UV→商机、UV→询盘按 90 天合计重算（1,309/21,847、248/21,847），同行均值与优秀线为平台同周期分层值（seCtrRivalAvg/RivalGood、uvAbRateRivalAvg/RivalGood，窗口日均）；商品类指标取 2026-09-17 当日快照；回复相关指标来自店铺服务分（statDate=2026-09-17）。</div>
+
+  <h3>2.2 逐周走势：曝光稳、UV 横盘、商机在 8 月底回了一口气</h3>
+  <canvas id="cWeek" height="120"></canvas>
+  <div class="note">按自然周（周一起算）聚合；9-14 起当周仅有 4 天数据。曝光（线）长期贴在 8.3~10.5 万，UV（右轴）在 1,500~2,100 之间横盘；商机（右轴）8-24 当周冲到 135，为窗口最高。</div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  曝光没掉，UV 也没掉，说明<b>门口的人流是稳的</b>；但 1,309 个商机里只有 248 条真询盘，等于 100 个人进店只有不到 2 个人开口问价。<span class="hl">问题不在门口，在店里</span>：商品页没把人留到“问一句”的程度。<b>怎么办：</b>把有询盘的 47 个高花费商品做成“主力样板”（P0-2），页面统一补 MOQ/交期/定制流程（P2-1）。</div>
+</section>
+
+<section>
+  <h2>三、广告：钱花在哪、回报在哪</h2>
+  <p class="lead">口径：全站推（wholeSite）90 天；直通车为独立计划。花费为平台报表真值，商品/地域级无花费列的部分按平均点击成本估算并标注。</p>
+
+  <h3>3.1 自然 vs 付费结构</h3>
+  <canvas id="cPaid" height="110"></canvas>
+  <table>
+    <thead><tr><th>流量来源</th><th class="num">曝光</th><th class="num">点击</th><th class="num">点击率</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>自然搜索</td><td class="num">570,953</td><td class="num">12,257</td><td class="num">2.15%</td><td><span class="b b-warn">量最大、效率最低</span></td></tr>
+      <tr><td>全站推（付费）</td><td class="num">605,647</td><td class="num">17,003</td><td class="num">2.81%</td><td><span class="b b-info">占全部点击 52.5%</span></td></tr>
+      <tr><td>直通车（付费）</td><td class="num">4,138</td><td class="num">141</td><td class="num">3.41%</td><td><span class="b b-warn">CTR 最高但点击成本 ¥14.31</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">自然与付费曝光存在重叠口径（全站推曝光同时计入总曝光），此处按数据参谋的 seImpsCnt/qztImpsCnt/p4pImpsCnt 分列，不做加总。</div>
+
+  <h3>3.2 计划全景：赚钱的和烧钱的差 6 倍</h3>
+  <table>
+    <thead><tr><th>计划</th><th class="num">花费(¥)</th><th class="num">点击</th><th class="num">点击率</th><th class="num">点击成本</th><th class="num">询盘</th><th class="num">商机</th><th class="num">商机成本</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>优品助推_20260414</td><td class="num">22,840.03</td><td class="num">6,093</td><td class="num">3.15%</td><td class="num">¥3.75</td><td class="num">33</td><td class="num">127</td><td class="num">¥179.84</td><td><span class="b b-ok">主力，应加</span></td></tr>
+      <tr><td>拓流_20260304</td><td class="num">17,770.91</td><td class="num">4,164</td><td class="num">2.72%</td><td class="num">¥4.27</td><td class="num">27</td><td class="num">95</td><td class="num">¥187.06</td><td><span class="b b-ok">主力，应加</span></td></tr>
+      <tr><td>推工厂_20260731</td><td class="num">14,999.99</td><td class="num">2,084</td><td class="num">2.53%</td><td class="num">¥7.20</td><td class="num">18</td><td class="num">74</td><td class="num">¥202.70</td><td><span class="b b-warn">商机率 3.55% 最高，但点击成本偏高</span></td></tr>
+      <tr><td>潜力成长_20260331</td><td class="num">8,610.39</td><td class="num">1,378</td><td class="num">2.32%</td><td class="num">¥6.25</td><td class="num">7</td><td class="num">37</td><td class="num">¥232.71</td><td><span class="b b-warn">中性</span></td></tr>
+      <tr><td>优品助推_20260511</td><td class="num">7,997.16</td><td class="num">1,713</td><td class="num">2.99%</td><td class="num">¥4.67</td><td class="num">6</td><td class="num">27</td><td class="num">¥296.19</td><td><span class="b b-warn">商机率 1.58% 偏低</span></td></tr>
+      <tr><td>潜力成长_20260820</td><td class="num">6,481.90</td><td class="num">598</td><td class="num">2.85%</td><td class="num">¥10.84</td><td class="num">5</td><td class="num">23</td><td class="num">¥281.82</td><td><span class="b b-warn">新开，点击成本高</span></td></tr>
+      <tr><td>潜1_20260714</td><td class="num">2,759.09</td><td class="num">248</td><td class="num">2.44%</td><td class="num">¥11.13</td><td class="num">2</td><td class="num">7</td><td class="num">¥394.16</td><td><span class="b b-bad">观察，两周无改善即停</span></td></tr>
+      <tr><td>方案包_20260731</td><td class="num">1,404.10</td><td class="num">167</td><td class="num">3.10%</td><td class="num">¥8.41</td><td class="num">1</td><td class="num">6</td><td class="num">¥234.02</td><td><span class="b b-info">正常</span></td></tr>
+      <tr><td>餐饮_20260623</td><td class="num">1,274.36</td><td class="num">54</td><td class="num">2.23%</td><td class="num">¥23.60</td><td class="num">1</td><td class="num">5</td><td class="num">¥254.87</td><td><span class="b b-warn">商机率 9.26% 但量太小</span></td></tr>
+      <tr><td>美妆_20260623</td><td class="num">1,213.00</td><td class="num">79</td><td class="num">3.14%</td><td class="num">¥15.35</td><td class="num">0</td><td class="num">1</td><td class="num">¥1,213.00</td><td><span class="b b-bad">零询盘，建议停</span></td></tr>
+      <tr><td>珠宝_20260623</td><td class="num">1,123.56</td><td class="num">112</td><td class="num">2.18%</td><td class="num">¥10.03</td><td class="num">0</td><td class="num">2</td><td class="num">¥561.78</td><td><span class="b b-bad">零询盘，建议停</span></td></tr>
+      <tr><td>普1_20260714</td><td class="num">803.64</td><td class="num">88</td><td class="num">1.83%</td><td class="num">¥9.13</td><td class="num">0</td><td class="num">1</td><td class="num">¥803.64</td><td><span class="b b-bad">零询盘，建议停</span></td></tr>
+      <tr><td>计划5-20260708</td><td class="num">802.72</td><td class="num">54</td><td class="num">2.62%</td><td class="num">¥14.87</td><td class="num">0</td><td class="num">0</td><td class="num">—</td><td><span class="b b-bad">零产出，立即停</span></td></tr>
+      <tr><td>新品加速_20260416</td><td class="num">681.98</td><td class="num">31</td><td class="num">2.62%</td><td class="num">¥22.00</td><td class="num">0</td><td class="num">1</td><td class="num">¥681.98</td><td><span class="b b-bad">零询盘，建议停</span></td></tr>
+      <tr><td>数码_20260623</td><td class="num">430.59</td><td class="num">33</td><td class="num">2.57%</td><td class="num">¥13.05</td><td class="num">0</td><td class="num">1</td><td class="num">¥430.59</td><td><span class="b b-bad">零询盘，建议停</span></td></tr>
+      <tr><td>补_20260813</td><td class="num">305.34</td><td class="num">107</td><td class="num">2.93%</td><td class="num">¥2.85</td><td class="num">0</td><td class="num">2</td><td class="num">¥152.67</td><td><span class="b b-info">成本最低，可保留观察</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">全部 16 个计划，花费合计 ¥89,498.76，与账户级一致。列名取自广告报表 tableMeta.schema（花费/点击量/点击率/点击成本/询盘量/全站商机量/全站商机成本）。</div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  同样一块钱，<b>优品助推能买 1 个商机只要 ¥180，珠宝计划要 ¥562，美妆计划要 ¥1,213 还一条询盘没有</b>。这不是“广告不行”，是<a>钱分得太平均</a>——16 个计划里有 7 个成本超过 ¥394 或者零产出。<span class="hl">先把 5 个零询盘计划关掉，钱挪到优品助推和推工厂</span>，一周就能看出商机成本往下走。<b>怎么办：</b>见 P0-1，设两条线——商机成本 >¥400 的降预算 50%，连续两周无商机的直接停。</div>
+</section>
+</div>
+
+<section>
+  <h2>三（续）、广告效率地图：商品 · 地域 · 品牌广告</h2>
+
+  <h3>3.3 推广商品：点击最多的品，未必是会问价的品</h3>
+  <table>
+    <thead><tr><th>商品</th><th class="num">点击</th><th class="num">花费(估算 ¥)</th><th class="num">询盘</th><th class="num">商机</th><th class="num">商机成本(估算)</th><th>判定</th></tr></thead>
+    <tbody>
+      <tr><td>Custom Vape Smoking Supplies Dispensary Display Cabinet</td><td class="num">1,368</td><td class="num">7,195.68</td><td class="num">5</td><td class="num">28</td><td class="num">¥256.99</td><td><span class="b b-bad">花费第一，¥1,439/询盘</span></td></tr>
+      <tr><td>Bespoke Perfume Display Table / Makeup Store Furniture</td><td class="num">731</td><td class="num">3,845.06</td><td class="num">7</td><td class="num">23</td><td class="num">¥167.18</td><td><span class="b b-ok">标杆，应加</span></td></tr>
+      <tr><td>Custom Skincare Store Furniture / Perfume Wall Display</td><td class="num">487</td><td class="num">2,561.62</td><td class="num">2</td><td class="num">18</td><td class="num">¥142.31</td><td><span class="b b-ok">商机成本最低</span></td></tr>
+      <tr><td>Custom Cafe Reception Counter &amp; Coffee Shop Bar Counter</td><td class="num">483</td><td class="num">2,540.58</td><td class="num">2</td><td class="num">7</td><td class="num">¥362.94</td><td><span class="b b-warn">中性偏弱</span></td></tr>
+      <tr><td>Custom Sweets Street Shop / Yogurt Store Display Counter</td><td class="num">434</td><td class="num">2,282.84</td><td class="num">3</td><td class="num">10</td><td class="num">¥228.28</td><td><span class="b b-info">正常</span></td></tr>
+      <tr><td>Custom Cafe Shop Furniture / Bake Donut Shop Fitting</td><td class="num">426</td><td class="num">2,240.76</td><td class="num">2</td><td class="num">9</td><td class="num">¥248.97</td><td><span class="b b-info">正常</span></td></tr>
+      <tr><td>Custom Pharmacy Shelves Modular Fixtures / Medical Shop Rack</td><td class="num">409</td><td class="num">2,151.34</td><td class="num">7</td><td class="num">12</td><td class="num">¥179.28</td><td><span class="b b-ok">询盘率最高</span></td></tr>
+      <tr><td>Custom Glass Display Cabinet / Toy Store Vitrine</td><td class="num">385</td><td class="num">2,025.10</td><td class="num">1</td><td class="num">3</td><td class="num">¥675.03</td><td><span class="b b-bad">应压降</span></td></tr>
+      <tr><td>Fashion Motorcycle Shop Interior / Motorbike Retail Display</td><td class="num">363</td><td class="num">1,909.38</td><td class="num">1</td><td class="num">6</td><td class="num">¥318.23</td><td><span class="b b-warn">应压降</span></td></tr>
+      <tr><td>Custom Wig Store Display / Toupee Shop Interior</td><td class="num">328</td><td class="num">1,725.28</td><td class="num">4</td><td class="num">10</td><td class="num">¥172.53</td><td><span class="b b-ok">表现好</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">商品级报表无花费列 → 花费与商机成本按「点击量 × 账户平均点击成本 ¥5.26」估算；本期商品级覆盖 15/16 个计划（缺"全站推广_推工厂_20260731"，上游单表 1,000 行上限，少约 2,084 次点击 ≈ 账户点击的 12%）。<b>汇总：</b>合并商品 521 个，其中有花费 420 个、有询盘 47 个、<b>有花费但零询盘 373 个（88.8%）</b>。</div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  花钱最多的电子烟陈列柜，1,368 次点击只换来 5 条询盘，<b>一条询盘要 ¥1,439</b>；反而药店货架 409 次点击就出了 7 条询盘，<span class="hl">单位效率是它的 5.6 倍</span>。更麻烦的是<b>420 个花了钱的商品里，373 个一条询盘都没有</b>——广告把钱摊在了整个货架上。<b>怎么办：</b>P0-2——先把药店货架、香水台、护肤店家具、假发店这类"点击少但问得多"的品提到主推位，把电子烟柜、玩具玻璃柜的预算砍一半。</div>
+
+  <h3>3.4 地域对比：点击在哪、询盘在哪</h3>
+  <canvas id="cGeo" height="140"></canvas>
+  <table>
+    <thead><tr><th>地域</th><th class="num">点击</th><th class="num">点击率</th><th class="num">询盘</th><th class="num">商机</th><th class="num">花费(估算 ¥)</th><th class="num">询盘率</th></tr></thead>
+    <tbody>
+      <tr><td>美国</td><td class="num">4,702</td><td class="num">2.99%</td><td class="num">37</td><td class="num">114</td><td class="num">24,732</td><td class="num">0.79%</td></tr>
+      <tr><td>中南美其他</td><td class="num">1,803</td><td class="num">2.65%</td><td class="num">13</td><td class="num">40</td><td class="num">9,484</td><td class="num">0.72%</td></tr>
+      <tr><td>澳大利亚</td><td class="num">631</td><td class="num">2.48%</td><td class="num">8</td><td class="num">39</td><td class="num">3,319</td><td class="num">1.27%</td></tr>
+      <tr><td>菲律宾</td><td class="num">909</td><td class="num">3.11%</td><td class="num">6</td><td class="num">23</td><td class="num">4,781</td><td class="num">0.66%</td></tr>
+      <tr><td>英国</td><td class="num">763</td><td class="num">2.90%</td><td class="num">6</td><td class="num">14</td><td class="num">4,013</td><td class="num">0.79%</td></tr>
+      <tr><td>法国</td><td class="num">824</td><td class="num">2.89%</td><td class="num">5</td><td class="num">19</td><td class="num">4,334</td><td class="num">0.61%</td></tr>
+      <tr><td>加拿大</td><td class="num">514</td><td class="num">2.56%</td><td class="num">5</td><td class="num">21</td><td class="num">2,704</td><td class="num">0.97%</td></tr>
+      <tr><td>意大利</td><td class="num">651</td><td class="num">2.77%</td><td class="num">3</td><td class="num">12</td><td class="num">3,424</td><td class="num">0.46%</td></tr>
+      <tr><td>以色列</td><td class="num">224</td><td class="num">2.82%</td><td class="num">3</td><td class="num">9</td><td class="num">1,178</td><td class="num">1.34%</td></tr>
+      <tr><td>德国</td><td class="num">439</td><td class="num">2.62%</td><td class="num">2</td><td class="num">7</td><td class="num">2,309</td><td class="num">0.46%</td></tr>
+    </tbody>
+  </table>
+  <div class="note">地域表无花费列 → 花费按点击 × ¥5.26 估算；共 96 个地域。<b>零询盘但吃掉点击的地域（估算花费）：</b>西班牙 501 次（¥2,635）、沙特 357（¥1,878）、荷兰 295（¥1,552）、阿联酋 225（¥1,184）、波兰 214（¥1,126）、刚果金 208（¥1,094）、加纳 180（¥947）、日本 159（¥836）、巴勒斯坦 133（¥700）。</div>
+
+  <h3>3.5 核心市场专项：美国（体量）＋ 澳洲（效率）</h3>
+  <table>
+    <thead><tr><th>环节</th><th>美国</th><th>澳大利亚</th><th>读数</th></tr></thead>
+    <tbody>
+      <tr><td>① 流量端</td><td>广告点击 4,702（占全站推点击 27.7%）；搜索曝光份额 22.1%（8 月）</td><td>广告点击 631（3.7%）；曝光份额 3.4%（8 月）</td><td><span class="b b-info">美国是绝对体量盘，澳洲量小</span></td></tr>
+      <tr><td>② 转化端</td><td>点击→询盘 0.79%、点击→商机 2.42%</td><td>点击→询盘 1.27%、点击→商机 6.18%</td><td><span class="b b-ok">澳洲转化效率约为美国 1.6~2.5 倍</span></td></tr>
+      <tr><td>③ 询盘端</td><td>询盘 37 条（占全站推询盘 37%）、商机 114</td><td>询盘 8 条、商机 39（商机成本约 ¥85）</td><td><span class="b b-warn">澳洲商机成本远低于账户均值 ¥219</span></td></tr>
+      <tr><td>④ 承接端</td><td>30 天会话 92（全店第一），买家活跃在北京时间 09:00-11:00 与 15:00-17:00，我方可覆盖；但 00:00-09:00 段我方响应密度仅为买家活跃度的 71%</td><td>会话 20、高意向 7；澳新买家活跃在中国 06:00-10:00，业务通常 09:00 才在线</td><td><span class="b b-bad">时差最后一公里：早班缺口</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">数据来源：全站推地域报表（点击/询盘/商机）+ 数据参谋地域分区（搜索曝光份额、店铺访客）+ 30 天 IM 会话。澳洲高意向率 35%（7/20）显著高于美国 29%（27/92），但因总量小（631 次点击）被压制。</div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  美国是"人最多"的市场，澳洲是"最会问价"的市场：同样 100 次点击，美国出 0.79 条询盘，<b>澳洲出 1.27 条</b>，商机更是 2.5 倍。可我们只给了澳洲 631 次点击、$ 预算不到美国的三分之一，而且<span class="hl">澳洲人上午 6 点就开始问，我们 9 点才上班</span>。<b>怎么办：</b>P1-3——把零询盘地域（西班牙、沙特、荷兰等约 2,272 次点击≈¥11,950）的预算挪到澳洲/加拿大/英国，同时排一个 06:00-10:00 的早班（P2-2）。</div>
+
+  <h3>3.6 品牌广告：问鼎 / 顶展（近 3 个完整月，Top20 聚合）</h3>
+  <table>
+    <thead><tr><th>类型</th><th>月份</th><th class="num">带标商品池</th><th class="num">曝光</th><th class="num">点击</th><th class="num">访问人数</th><th class="num">询盘</th><th class="num">TM 人数</th><th class="num">起草订单</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="3">问鼎</td><td>2026-06</td><td class="num">27</td><td class="num">11,331</td><td class="num">333</td><td class="num">558</td><td class="num">4</td><td class="num">14</td><td class="num">1</td></tr>
+      <tr><td>2026-07</td><td class="num">37</td><td class="num">20,533</td><td class="num">544</td><td class="num">1,383</td><td class="num">9</td><td class="num">22</td><td class="num">6</td></tr>
+      <tr><td>2026-08</td><td class="num">227</td><td class="num">35,627</td><td class="num">933</td><td class="num">2,359</td><td class="num">26</td><td class="num">47</td><td class="num">4</td></tr>
+      <tr><td rowspan="3">顶展</td><td>2026-06</td><td class="num">41</td><td class="num">15,194</td><td class="num">403</td><td class="num">889</td><td class="num">6</td><td class="num">19</td><td class="num">3</td></tr>
+      <tr><td>2026-07</td><td class="num">45</td><td class="num">21,548</td><td class="num">709</td><td class="num">1,545</td><td class="num">8</td><td class="num">28</td><td class="num">5</td></tr>
+      <tr><td>2026-08</td><td class="num">46</td><td class="num">14,854</td><td class="num">397</td><td class="num">1,097</td><td class="num">13</td><td class="num">17</td><td class="num">3</td></tr>
+    </tbody>
+  </table>
+  <div class="note">口径：数据参谋商品效果月分区，按 isWendingProd／isIntlBwProd 标记筛选后取曝光 Top20 聚合（池内商品数见"带标商品池"列，平台单页上限 20 条）。三类标记（问鼎/顶展/全站推）可重叠，花费不可拆分，故不做成本推算。8 月问鼎带标商品从 37 个跳到 227 个，形态变化明显，建议运营核实是否为标记规则调整。</div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  顶展稳（46 个品、月曝光 1.5-2.1 万），问鼎 8 月一口气铺到 227 个品，曝光冲到 3.56 万、询盘 26 条——<b>这是 8 月询盘抬头的直接原因</b>。但要注意：<span class="hl">问鼎顶展的花费和全站推是算在同一个账户里的</span>，别把品牌位的功劳记到全站推头上，也别一边关计划一边把品牌位当成增量。<b>怎么办：</b>P1-1 把 8 月跑出来的这批问鼎商品里的高询盘款，挑进"稳定询盘商品池"重点养。</div>
+</section>
+
+<section>
+  <h2>四、询盘：30 天 424 个会话的真实结构</h2>
+  <p class="lead">数据窗口 2026-08-19 ~ 2026-09-17（近 30 天，平台 IM 上限），账号范围=全店 10 个账号，逐会话结合上下文判定。</p>
+
+  <div class="grid2">
+    <div>
+      <h3>4.1 总盘子</h3>
+      <table>
+        <tbody>
+          <tr><td>会话数</td><td class="num">424</td></tr>
+          <tr><td>消息数</td><td class="num">6,679</td></tr>
+          <tr><td>买家消息 / 卖家消息</td><td class="num">2,817 (42.2%) / 3,862 (57.8%)</td></tr>
+          <tr><td>平均每会话消息</td><td class="num">15.8 条</td></tr>
+          <tr><td>买家有实质内容</td><td class="num">286</td></tr>
+          <tr><td>买家零发言/仅卡片</td><td class="num">138 (32.5%)</td></tr>
+          <tr><td>会话收尾方（我方/买家）</td><td class="num">406 / 18</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <h3>4.2 意向分层</h3>
+      <canvas id="cIntent" height="200"></canvas>
+      <div class="note">高意向=出现报价/单价/预算/MOQ/样品/付款/物流/数量等商务诉求（93 个，21.9%）；中意向=有门店/项目/设计等实质描述（87 个）；低意向=仅卡片点击或寒暄（244 个）。</div>
+    </div>
+  </div>
+
+  <h3>4.3 需求 4 分型（可叠加）</h3>
+  <table>
+    <thead><tr><th>分型</th><th class="num">会话数</th><th>说明与判定</th></tr></thead>
+    <tbody>
+      <tr><td>① 要我方做设计（方案/效果图/布局）</td><td class="num">28</td><td><span class="b b-ok">最高价值</span> 明确要 3D/效果图/布局或询问设计服务与设计费</td></tr>
+      <tr><td>② 有图纸或清单询价</td><td class="num">17</td><td><span class="b b-ok">高价值</span> 自述有平面图/规格书/尺寸并据此询价</td></tr>
+      <tr><td>③ 问链接或单价</td><td class="num">18</td><td><span class="b b-warn">量大质浅</span> 直接要链接、单品单价</td></tr>
+      <tr><td>④ 其他</td><td class="num">375</td><td><span class="b b-info">绝大多数为卡片点击或泛询价</span></td></tr>
+    </tbody>
+  </table>
+  <div class="note">51 条已进入实质阶段的线索中：①14 条、②17 条、③11 条；"要设计＋有图纸"同时出现的最集中在我方设计服务与整店定制场景。</div>
+
+  <h3>4.4 客户 8 类画像</h3>
+  <table>
+    <thead><tr><th>类别</th><th class="num">会话数</th><th class="num">占比</th><th>判定要点</th></tr></thead>
+    <tbody>
+      <tr><td>A 零售店主（自己开店、买货装自己门店）</td><td class="num">75</td><td class="num">17.7%</td><td><span class="b b-ok">最核心客群</span></td></tr>
+      <tr><td>B 设计公司（自述有设计团队＋以设计公司名义接单）</td><td class="num">0</td><td class="num">0.0%</td><td><span class="b b-info">本期无</span></td></tr>
+      <tr><td>C 安装队 / 施工方（为第三方项目施工）</td><td class="num">0</td><td class="num">0.0%</td><td><span class="b b-info">本期无</span></td></tr>
+      <tr><td>D 中间商 / 贸易代理（代采、转卖、代理）</td><td class="num">9</td><td class="num">2.1%</td><td><span class="b b-warn">含 sourcing agent，质量不低</span></td></tr>
+      <tr><td>E 个人非店装</td><td class="num">2</td><td class="num">0.5%</td><td><span class="b b-info">家用/自用</span></td></tr>
+      <tr><td>F 单轮无实质（仅卡片点击/寒暄/无内容）</td><td class="num">189</td><td class="num">44.6%</td><td><span class="b b-bad">水面以下</span></td></tr>
+      <tr><td>G 其他待识别（身份不明，不猜）</td><td class="num">134</td><td class="num">31.6%</td><td><span class="b b-warn">有内容但未自述身份</span></td></tr>
+      <tr><td>H 系统 / 平台消息</td><td class="num">15</td><td class="num">3.5%</td><td><span class="b b-info">不构成询盘</span></td></tr>
+    </tbody>
+  </table>
+  <div class="co-info">
+    <b>改判说明（上下文优先于字面）：</b>本期 B（设计公司）与 C（安装队）均为 0——所有"设计味很重"的会话（提交 Supplier Brief、要 shop drawings）结合上下文后都是<b>店主自己的项目</b>。典型改判：<br>
+    ① 南非 Yasmin Barsch（提交 8.5m×5.5m 完整 brief、要 shop drawings）→ 实为 A：招牌 "YASMIN BARSCH / FOR THE LOVE OF SILK" 就印在她自己的店铺后墙上；<br>
+    ② 美国 Timeless Masterpiece（"We sell jackets/jerseys/shirts" 像批发商）→ 实为 A：原文是给自己服装公司做零售陈列；<br>
+    ③ 墨西哥 Saul Hernandez（从头谈规格/MOQ/价格）→ 实为 A：自述"家族烘焙店经营约 18 年"；<br>
+    ④ 美国 JAZMINE PALOMEQUE（一次要 5 件、问单价总价运费，像开店采购）→ 实为 D：自述 "I'm a sourcing agent for my company"；<br>
+    ⑤ 德国 Maud Lane / 危地马拉 Douglas Morales（都有店、谈陈列）→ 实为 E：分别为"自己的房间"与"自家用、非商用"。<br>
+    <b>运营含义：</b>G（134 个"有内容但没自述身份"）是最大的一块可运营空间——问完价就走，说明第一轮就没有把人问清楚。<b>建议动作：</b>首次回复固定问三件事——你是谁（店主/代理/设计方）、店在哪、多大面积。
+  </div>
+
+  <h3>4.5 国家分布（Top 10 会话数）</h3>
+  <table>
+    <thead><tr><th>国家</th><th class="num">会话数</th><th class="num">①要设计</th><th class="num">②有图纸</th><th class="num">③问单价</th><th class="num">其中高意向</th></tr></thead>
+    <tbody>
+      <tr><td>US 美国</td><td class="num">92</td><td class="num">10</td><td class="num">4</td><td class="num">7</td><td class="num">27</td></tr>
+      <tr><td>CN 中国（含平台/中文联系人）</td><td class="num">25</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">2</td></tr>
+      <tr><td>AU 澳大利亚</td><td class="num">20</td><td class="num">1</td><td class="num">2</td><td class="num">2</td><td class="num">7</td></tr>
+      <tr><td>CA 加拿大</td><td class="num">14</td><td class="num">1</td><td class="num">2</td><td class="num">1</td><td class="num">4</td></tr>
+      <tr><td>IT 意大利</td><td class="num">12</td><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="num">3</td></tr>
+      <tr><td>FR 法国</td><td class="num">12</td><td class="num">1</td><td class="num">1</td><td class="num">1</td><td class="num">5</td></tr>
+      <tr><td>GB 英国</td><td class="num">10</td><td class="num">1</td><td class="num">2</td><td class="num">0</td><td class="num">3</td></tr>
+      <tr><td>DE 德国</td><td class="num">9</td><td class="num">0</td><td class="num">0</td><td class="num">1</td><td class="num">2</td></tr>
+      <tr><td>PH 菲律宾</td><td class="num">8</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">1</td></tr>
+      <tr><td>SO 索马里</td><td class="num">7</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td class="num">0</td></tr>
+    </tbody>
+  </table>
+  <div class="note">共覆盖 104 个国家/地区。① ② ③ 类"可操作询盘"集中在美、澳、加、英、法、意等成熟市场；法语区（FR/SN/BE/CI 等）会话量不小但极少提设计要求或单价，长期停在"发目录/发图片"。</div>
+
+  <h3>4.6 已进入实质阶段的线索：51 条，卡在哪一步</h3>
+  <canvas id="cBlock" height="140"></canvas>
+  <table>
+    <thead><tr><th>卡点</th><th class="num">会话数</th><th class="num">占比</th><th>代表会话（国家／类型）</th></tr></thead>
+    <tbody>
+      <tr><td>买家未回应（我方跟进后零发言）</td><td class="num">138</td><td class="num">32.5%</td><td>—</td></tr>
+      <tr><td>等我方方案 / 承诺后回交未闭环</td><td class="num">31</td><td class="num">7.3%</td><td>BE 定金已付（4 次承诺）／AU 待报价</td></tr>
+      <tr><td>MOQ 不匹配（嫌起订量高、只要 1 件）</td><td class="num">29</td><td class="num">6.8%</td><td>ES 6 件／FR 预算约 500 USD</td></tr>
+      <tr><td>交期来不及（赶不上 25-35 天生产＋海运）</td><td class="num">15</td><td class="num">3.5%</td><td>AU 设计费退款争议／GB 铺位未定</td></tr>
+      <tr><td>只要现货 / 只要 1 件</td><td class="num">14</td><td class="num">3.3%</td><td>US 1,025 sq ft 要可转换布局</td></tr>
+      <tr><td>价格 / 预算（嫌贵、比价被腰斩）</td><td class="num">9</td><td class="num">2.1%</td><td>DE 报 923 USD 后称太贵</td></tr>
+      <tr><td>退款 / 纠纷 · 设计费 · 运费 · 转向他供</td><td class="num">22</td><td class="num">5.2%</td><td>US 发货延误投诉</td></tr>
+    </tbody>
+  </table>
+  <div class="note">"无明确卡点"指会话在我方最近一次跟进后停止推进，不代表成交；51 条线索明细（会话 ID／国家／客户类型／需求分型／卡点 + 买家首末原话）见数据附录文件。</div>
+
+  <h3>4.7 平台运营问题清单（运营复盘重点）</h3>
+  <table>
+    <thead><tr><th class="num">#</th><th>问题</th><th>数据证据</th><th>运营动作</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td>承诺后回交无时效跟踪</td><td>严格命中 37 条承诺话术、分布在 31 个会话；6 个会话承诺后本账号再无消息；仅 17 个在 24h 内有后续。归属：May Xie 15 条、Wendy Mai 10、Tina Gao 7、Kaylee Law 4、Zhang Zaria 1；主账号 0（项目制分工，正常）</td><td>建"承诺台账"：说出去就写回交时间；24h 未闭环自动升级主管；每日 18:00 清零未读（当前 76 条未读口径由平台侧提供）</td></tr>
+      <tr><td class="num">2</td><td>5 分钟首响不达标</td><td>44.6% vs 同层 20 分位线 70.94%；平均回复 2.22h vs 0.95h；30 天新买家未回复流失 19 个</td><td>排班覆盖双峰（09:00-11:00、15:00-17:00）；首响 5 分钟提醒；新买家单独队列优先</td></tr>
+      <tr><td class="num">3</td><td>夜间（00:00-09:00）覆盖不足</td><td>该时段买家 568 条（占买家消息 20.2%），我方仅 404 条（占我方 10.5%）——对应美洲傍晚/欧洲下午</td><td>美加/拉美尾段排 1 人轮值到 24:00，其余用自动接待兜底</td></tr>
+      <tr><td class="num">4</td><td>群发挤压响应</td><td>09:00 单小时我方 537 条 = 同期买家 168 条的 3.2 倍</td><td>群发挪到 08:30 前完成，09:00-11:00 时段只做响应不做群发</td></tr>
+      <tr><td class="num">5</td><td>MOQ/交期信息没前置</td><td>MOQ 卡点 29 会话、交期 15 会话、只要现货 14 会话；买家主动提 MOQ 仅 14 会话</td><td>商品页＋报价函统一写 MOQ、生产周期、海运时效（P1-1）</td></tr>
+      <tr><td class="num">6</td><td>素材与认证缺口</td><td>85 个会话索要素材（图片 53、目录 28、认证 17、图纸 17、视频 6）；认证询问集中在电子/灯具类陈列柜</td><td>分品类标准素材包＋认证文档库，4h 内可发（P2-1）</td></tr>
+      <tr><td class="num">7</td><td>设计费政策不清</td><td>设计费卡点 6 会话、退款/纠纷 6 会话（含 AU 设计费退款争议）</td><td>明确"设计费可抵扣订单"政策并写入报价函</td></tr>
+      <tr><td class="num">8</td><td>买家拿不出图纸/尺寸</td><td>2 会话明确"没有平面图"（"i have ni plan" / "Not yet"）</td><td>提供拍照＋尺寸模板引导包，业务先帮着出草图</td></tr>
+      <tr><td class="num">9</td><td>商品层 88.8% 有花费零询盘</td><td>420 个有花费商品中 373 个零询盘（广告归因口径）</td><td>商品分层，主推 47 个有询盘商品（P0-2）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  这 30 天的询盘<b>不是没质量，是没接住</b>：424 个会话里 93 个高意向、51 个已经谈到数量图纸定金，其中比利时一单定金都付了还在等我们回复，澳洲一单因为我们设计费退款吵到要换供应商。<span class="hl">最扎眼的一条是：说"我去问经理"的 37 句话里，有 6 句之后再没消息</span>——客人不是被价格赶走的，是被沉默赶走的。<b>怎么办：</b>P0-3 的承诺台账先立起来，一周内就能看到"承诺后无下文"归零。</div>
+</section>
+
+<section>
+  <h2>五、子账号：谁在接、谁在漏</h2>
+  <p class="lead"><b>排除口径：</b>按技能规则，近 30 天询盘/会话 &lt;20 的账号不进入红黑榜（历史遗留或闲号，建议处置）；本店为 Solcire Surmay（0 会话）、Miah（2）、Nancy Wen（2）、Zhang Zaria（5）、Emily（6），仅作备注。主账号 Leo Chen 属项目制分工（负责分配与内部方案），单独列出不与业务账号同榜比较。</p>
+
+  <h3>5.1 账号 × 承接交叉表（经营效果为 7 月 / 8 月月分区）</h3>
+  <table>
+    <thead><tr><th>账号</th><th class="num">IM 会话<br>(30天)</th><th class="num">商机 UV<br>7月/8月</th><th class="num">负责商品<br>7月/8月</th><th class="num">回复率<br>7月/8月</th><th class="num">平均回复<br>(h)</th><th class="num">5分钟率<br>7月/8月</th><th class="num">起草订单<br>7月/8月</th><th class="num">成交金额<br>(¥)</th></tr></thead>
+    <tbody>
+      <tr><td>Wendy Mai</td><td class="num">147</td><td class="num">131 / 87</td><td class="num">176 / 173</td><td class="num">100% / 100%</td><td class="num">1.11 / 1.50</td><td class="num">43.5% / 31.2%</td><td class="num">0 / 0</td><td class="num">0 / 508.57</td></tr>
+      <tr><td>Kaylee Law</td><td class="num">90</td><td class="num">115 / 122</td><td class="num">1 / 1</td><td class="num">100% / 100%</td><td class="num">0.35 / 0.81</td><td class="num">75.6% / 66.7%</td><td class="num">1 / 6</td><td class="num">14,044 / 11,556</td></tr>
+      <tr><td>Tina Gao</td><td class="num">86</td><td class="num">0 / 83</td><td class="num">0 / 0</td><td class="num">0% / 100%</td><td class="num">— / 2.43</td><td class="num">0% / 38.5%</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+      <tr><td>May Xie</td><td class="num">78</td><td class="num">142 / 112</td><td class="num">171 / 168</td><td class="num">100% / 100%</td><td class="num">2.85 / 3.75</td><td class="num">51.4% / 40.4%</td><td class="num">1 / 1</td><td class="num">200 / 3,252</td></tr>
+      <tr><td><b>Leo Chen（主账号）</b></td><td class="num">8</td><td class="num">4 / 3</td><td class="num">949 / 959</td><td class="num">100% / 100%</td><td class="num">1.56 / 2.58</td><td class="num">0% / 50%</td><td class="num">6 / 8</td><td class="num">496,785 / 539,322</td></tr>
+      <tr><td colspan="9" style="color:#6b7c8c;font-size:12px">以下为排除口径账号（30 天会话 &lt;20，仅备注）</td></tr>
+      <tr><td>Emily</td><td class="num">6</td><td class="num">3 / 7</td><td class="num">221 / 214</td><td class="num">66.7% / 100%</td><td class="num">10.68 / 3.37</td><td class="num">0% / 0%</td><td class="num">0 / 0</td><td class="num">0 / 3,428.79</td></tr>
+      <tr><td>Zhang Zaria</td><td class="num">5</td><td class="num">12 / 7</td><td class="num">0 / 0</td><td class="num">100% / 100%</td><td class="num">0.73 / 1.29</td><td class="num">38.5% / 42.9%</td><td class="num">1 / 0</td><td class="num">500 / 0</td></tr>
+      <tr><td>Miah - Consultant</td><td class="num">2</td><td class="num">0 / 2</td><td class="num">213 / 208</td><td class="num">0% / 100%</td><td class="num">— / 5.79</td><td class="num">0% / 0%</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+      <tr><td>Nancy Wen</td><td class="num">2</td><td class="num">5 / 2</td><td class="num">0 / 0</td><td class="num">75% / 100%</td><td class="num">6.39 / 5.25</td><td class="num">50% / 0%</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+      <tr><td>Solcire Surmay</td><td class="num">0</td><td class="num">0 / 0</td><td class="num">0 / 0</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">0 / 0</td><td class="num">0 / 0</td></tr>
+    </tbody>
+  </table>
+  <div class="note">口径：IM 会话数来自 OneTalk 30 天（语义归属到接待账号）；商机 UV／负责商品数／回复率／平均回复时长／5 分钟率／起草订单／成交金额来自数据参谋「员工经营效果」月分区（7 月＝2026-07-01、8 月＝2026-08-01，9 月分区未产出故以 8 月为最新完整月）；"—"表示该月无数据。</div>
+
+  <h3>5.2 跟进量 vs 承接质量（会话数 vs 5 分钟首响率）</h3>
+  <canvas id="cAcct" height="130"></canvas>
+
+  <div class="co-info">
+    <b>红榜：</b>Kaylee Law（会话 90、5 分钟率 75.6%/66.7%、平均回复 0.35/0.81h，两月成交 ¥25,600；只挂 1 个商品却是全店承接最稳的人）；Zhang Zaria（平均 0.73/1.29h，虽量小但快）。<br>
+    <b>黑榜：</b>Emily（平均回复 10.68h、5 分钟率 0%）；Nancy Wen（6.39/5.25h、商机 UV 仅 5/2）；Tina Gao（7 月商机 UV 为 0、5 分钟率 0%，8 月才回到 83/38.5%）；Miah 与 Solcire Surmay（零承接，但 Miah 名下挂着 213/208 个商品）。<br>
+    <b>派单结构提示：</b>主账号 Leo Chen 挂 949/959 个商品、贡献全店 84% 的成交金额（7 月 ¥496,785、8 月 ¥539,322），但只接了 8 个会话——属于项目制分工的典型形态：<b>承接在业务、成交在内部方案与老板端</b>。这也解释了为什么"承诺后回交"集中在业务账号（May Xie 15 条、Wendy Mai 10、Tina Gao 7）：<span class="hl">业务是"转述者"，回交速度取决于内部响应，而不是话术能力</span>。
+  </div>
+
+  <div class="plain"><span class="t">🗣️ Jay大白话：</span>
+  看这张表要看两栏：<b>谁接得多、谁回得快</b>。Kaylee 手里只有 1 个商品，却接了 90 个会话、两月做出 2.56 万成交，5 分钟回复率 66%+——这是"人效标杆"。反过来，<span class="hl">Emily 平均要 10 个小时才回一句话，Miah 名下挂着 200 多个商品却一个商机都没接到</span>，等于挂名。"我去问经理"这句话 37 次里 25 次出自 May Xie 和 Wendy Mai，说明<b>真正的瓶颈是内部方案回交慢，不是业务不努力</b>。<b>怎么办：</b>P0-3 建台账＋定 24h 回交；P2-2 处置闲号并补美加夜段排班。</div>
+</section>
+
+<section>
+  <h2>六、竞品对标：本轮未完成（待确认竞店名单）</h2>
+  <div class="co-risk">
+    <b>状态：口径未确认，本章留空，不做半成品推断。</b><br>
+    档案里本店没有沉淀竞店名单；本次表单中你填的是「U1」，我无法唯一确定它指的是哪一组店铺，为避免把对标做在错的店上，本章先不出数。<br>
+    <b>需要你确认（任一即可）：</b>①沿用集团第一份报告的那套同行（欧野店1 gzouyee、欧野店1-分 ouyee、欧野店2 gzfocus、欧野2-医药垂直 focuspharmacy、喜诺店1 sherodecoration、喜诺店2 higherfurniture、喷薄-主 penbao、喷薄-分 penbodisplay、贝乐 betterfurniture、贝森 gzbenson）；②或直接给我你命名=loginId 的名单。
+  </div>
+  <p class="lead">确认后我会补齐本章三项：<b>①</b> 流量指数 / 询盘指数 / 询盘强度（询盘指数÷流量指数）对比表，左侧按集团配色标色条；<b>②</b> 流量×强度散点（本店红色菱形突出）；<b>③</b> 上新节奏与 MOQ/标价结构对比 + 打法标签。</p>
+</section>
+
+<section>
+  <h2>七、行动建议（P0 两周 / P1 本月 / P2 本季度）</h2>
+
+  <div class="act"><span class="tag">P0-1</span><b>广告止血与集中：先关 5 个零询盘计划</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>16 个全站推计划里，美妆（¥1,213／0 询盘）、珠宝（¥1,124／0 询盘）、普1（¥804／0 询盘）、计划5（¥803／0 商机 0 询盘）、数码（¥431／0 询盘）、新品加速（¥682／1 商机 0 询盘）合计约 <b>¥5,055</b> 基本无回报；账户商机成本 ¥218.82。</li>
+      <li><b>做什么：</b>上述 6 个计划全部暂停；释放预算加到「优品助推_20260414」（¥179.84/商机）、「推工厂_20260731」（商机率 3.55% 最高）、「拓流_20260304」；「潜1_20260714」（¥394.16/商机）降预算 50% 观察两周。</li>
+      <li><b>怎么验证：</b>两周后账户商机成本 ≤ ¥190，全站推商机量不低于当前 409；暂停计划的 0 产出商品不再产生花费。</li>
+    </ul>
+  </div>
+
+  <div class="act"><span class="tag">P0-2</span><b>商品分层：把 88.8% 的"白烧品"压下来</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>420 个有花费商品中 373 个零询盘；电子烟陈列柜 ¥7,196 只换 5 条询盘（¥1,439/条），而药店货架 ¥179/商机、香水台 ¥167/商机。</li>
+      <li><b>做什么：</b>建三档：主推（47 个有询盘商品 + 药店货架/香水台/护肤店家具/假发店/甜品店）→ 提价加权；观察（有花费零询盘但点击率 ≥3%）→ 只保留自然流量；压降（花费 ≥¥1,500 且询盘 ≤1）→ 电子烟柜、玩具玻璃柜、摩托车店，预算各砍 50%。</li>
+      <li><b>怎么验证：</b>零询盘商品的花费占比从 88.8% 降到 60% 以下；广告归因有询盘商品数从 47 增到 65。</li>
+    </ul>
+  </div>
+
+  <div class="act"><span class="tag">P0-3</span><b>承诺—回交闭环：说出去的话要有下落</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>30 天里 37 条"我去问经理/稍后回复"承诺分布在 31 个会话，其中 6 个会话承诺后再无下文；仅 17 个在 24h 内有后续；首响 5 分钟率 44.6%（同行 20 分位线 70.94%）。</li>
+      <li><b>做什么：</b>新建「承诺台账」——业务说出承诺即登记买家、要点、回交时限（默认 24h）；每日 18:00 由主管清零当日未闭环项与未读；主账号（Leo Chen）按项目制分工只承诺方案回交时间，不承诺价格。</li>
+      <li><b>怎么验证：</b>承诺后 24h 闭环率 ≥90%、承诺后无下文会话 = 0；首响 5 分钟率 ≥65%；未读清零可每日抽查。</li>
+    </ul>
+  </div>
+
+  <div class="act p1"><span class="tag">P1-1</span><b>把稳定询盘商品池从 7 个养到 20 个</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>连续 ≥3 个月都有询盘的商品只有 <b>7 个</b>（连续 4 个月 2 个、连续 3 个月 5 个）；连续 2 个月有询盘的 26 个、只出 1 个月的 144 个——商品面宽够，但"月月有询盘"的骨干太薄。</li>
+      <li><b>做什么：</b>从 26 个"连续 2 月"＋8 月问鼎带标高询盘款里挑 13 个补齐到 20 个骨干池；每品统一补 MOQ、生产周期、海运时效、定制流程四段信息（直接回应 29 个 MOQ 卡点、15 个交期卡点）。</li>
+      <li><b>怎么验证：</b>下一个完整月结束时，连续 ≥3 月有询盘的商品 ≥15 个，连续 4 月 ≥8 个。</li>
+    </ul>
+  </div>
+
+  <div class="act p1"><span class="tag">P1-2</span><b>上新与冷启动：90 天只发 59 个品，是同行均值的一半</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>90 天新发品 59 个（同行均值 109、优秀 225），有效商品 1,718 个基本靠存量在跑；8 月新建 23 个中 23 个有曝光（建档完成率尚可，但量太小）。</li>
+      <li><b>做什么：</b>按询盘分布定向上新——餐饮甜品（48 个出过询盘的商品）、药店/医疗（17）、珠宝（20）优先，每月 25-30 个；每个新品配 3 张实拍图 + 定制流程段 + MOQ/交期，走"问鼎带标 + 新品加速"组合测试。</li>
+      <li><b>怎么验证：</b>下个 90 天新发品 ≥100 个（回到同行均值线）；新品首月产生询盘的比例 ≥20%。</li>
+    </ul>
+  </div>
+
+  <div class="act p1"><span class="tag">P1-3</span><b>地域出价分层：把零询盘地域的钱挪到澳加英</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>西班牙 501、沙特 357、荷兰 295、阿联酋 225、波兰 214、刚果金 208、加纳 180、日本 159、巴勒斯坦 133 次点击全部零询盘，合计约 2,272 次点击 ≈ ¥11,950 估算花费；而澳洲 1.27% 询盘率、6.18% 商机率全站最高却只有 631 次点击。</li>
+      <li><b>做什么：</b>把上述零询盘地域的出价降到最低档或直接排除，预算转向澳洲、加拿大、英国、以色列（1.34% 询盘率）；澳洲单独设计划并配 06:00-10:00 早班承接。</li>
+      <li><b>怎么验证：</b>零询盘地域花费占比降到 10% 以下；澳+加询盘合计从 13 条升到 20 条，商机成本保持 ≤ ¥120。</li>
+    </ul>
+  </div>
+
+  <div class="act p2"><span class="tag">P2-1</span><b>素材与认证库：85 个会话在要素材</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>30 天 85 个会话、150 条买家消息索要素材（图片 53、目录 28、认证 17、图纸 17、视频 6）；认证询问集中在电子/灯具类陈列柜，属常规目录未覆盖的信息缺口；另有 2 个会话买家拿不出平面图。</li>
+      <li><b>做什么：</b>按业务分组各做一套标准素材包（实拍图 + 目录 + 图纸样例 + 视频）；认证类整理 CE/UL/防火证明成可发文档；配套"拍照 + 尺寸模板"引导包给无图纸买家。</li>
+      <li><b>怎么验证：</b>素材类请求 4h 内可发标准包；索要素材会话的二次回复率（买家回过至少一轮）提升。</li>
+    </ul>
+  </div>
+
+  <div class="act p2"><span class="tag">P2-2</span><b>账号整编与夜段/早段排班</b>
+    <ul class="tight">
+      <li><b>解决什么：</b>Solcire Surmay 零承接；Miah 名下挂 213/208 个商品却零商机；Nancy Wen 平均回复 6.39/5.25h；Emily 平均回复 10.68h 且 5 分钟率 0%；Tina Gao 7 月商机 UV 为 0。<b>时段上：</b>00:00-09:00 买家发来 568 条而我只发 404 条；澳洲买家 06:00 起活跃。</li>
+      <li><b>做什么：</b>闲号处置（合并或停用）；Emily／Nancy 纳入响应质检周考；排 T 型班次——06:00-10:00 早班（澳洲）、00:00 前夜班（美加拉美尾段）各 1 人，群发统一挪到 08:30 前完成。</li>
+      <li><b>怎么验证：</b>低效账号从 4 个降到 ≤1 个；00:00-09:00 我方消息数 ≥ 买家消息数；09:00 群发峰值从 537 条降到 200 条以下。</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>八、附录：口径与数据边界</h2>
+  <table>
+    <thead><tr><th>项目</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>店铺与账号</td><td>superudisplay（Guangzhou Super U Shop Fitting Ltd.），公司 ID 214912632，主账号 Leo Chen（aliId 1596510578），团队 10 个账号。</td></tr>
+      <tr><td>大盘窗口</td><td>数据参谋 2026-06-20 ~ 2026-09-17（90 天日粒度，最新完整日 9-17）。</td></tr>
+      <tr><td>商品分区</td><td>商品效果按月取数：2026-05 / 06 / 07 / 08 为完整月；<b>9 月分区平台回退未完成月（返回内容与 8 月一致）</b>，故商品级以 8 月为最新完整月。</td></tr>
+      <tr><td>"90 天新发品 = 59" 口径</td><td>crtProdCnt 为平台「90 天新发品数」滚动值，取 9-17 快照；<b>不等于日增量之和</b>（日粒度上该字段是滚动值，逐日加总会严重放大）。</td></tr>
+      <tr><td>广告口径</td><td>全站推（wholeSite）账户/计划为报表真值，花费合计 ¥89,498.76；直通车（标准推广）¥2,017.41。<b>商品级与地域级报表均无花费列</b>，统一按「点击量 × 账户平均点击成本 ¥5.26」估算并已在表头标注。</td></tr>
+      <tr><td>广告商品级覆盖缺口</td><td>账户级商品报表超过上游 1,000 行上限，改按计划逐条取数，覆盖 15/16 个计划；<b>缺「全站推广_推工厂_20260731」</b>（花费 ¥15,000、点击 2,084、询盘 18），故商品汇总 521 个、有花费 420 个、有询盘 47 个、零询盘 373 个均不含该计划商品。</td></tr>
+      <tr><td>品牌广告</td><td>问鼎（isWendingProd）与顶展（isIntlBwProd）标记可重叠、与全站推也可重叠，<b>花费不可拆分</b>，故只做曝光/点击/询盘/订单的量级对比，不做成本推算；聚合为各月曝光 Top20（单页上限 20 条）。</td></tr>
+      <tr><td>询盘明细</td><td>OneTalk IM 近 30 天（平台限制），账号范围=全店 10 个账号；<b>意向分层、需求分型、客户画像均为语义判定结果，不是平台字段</b>；共 424 会话 / 6,679 条消息，失败项 0。</td></tr>
+      <tr><td>子账号数据</td><td>数据参谋「员工经营效果」月分区，仅 2026-07-01 与 2026-08-01 两组；9 月分区未产出。IM 会话归属与员工经营效果为两套口径（前者按实际接待账号、后者按平台归属），交叉表只作对照不做加总。</td></tr>
+      <tr><td>同行对标线</td><td>同行均值 / 优秀线为数据参谋平台同周期分层值（如 seCtrRivalAvg/seCtrRivalGood、uvAbRateRivalAvg/RivalGood、validProdCntRivalGood），窗口日均口径。</td></tr>
+      <tr><td>未完成项</td><td><b>第六章竞品对标未做</b>——竞店名单待确认（见第六章说明）。</td></tr>
+      <tr><td>原始数据位置</td><td>deliveries/20260919/superudisplay/raw/（数据参谋汇总、产品月分区、地域、渠道、员工效果、广告报表 SQL 原始返回）+ raw/ads/ads_summary.md（广告汇总表）+ deliveries/20260919/ca-20260919-191056/data/analysis/（30 天会话逐条判定明细）。</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section style="border-left:5px solid var(--gold)">
+  <h2>给管理层的三个一句话结论</h2>
+  <ol style="font-size:14.5px;line-height:1.9;margin:8px 0 0;padding-left:22px">
+    <li><b>货不差、流量不差，差在"进店到问价"这一段：</b>1,718 个商品、90 天 115 万曝光都不低于同行，但 UV→商机 5.99% 低于同行均值 6.74%，1,309 个商机只换来 248 条询盘。</li>
+    <li><b>广告先止血再谈增长：</b>90 天 ¥91,516 里约 ¥5,055 花在 6 个零询盘/零产出计划上，另有 373 个有花费商品一条询盘都没有——两周内集中预算即可把商机成本从 ¥219 压到 ¥190 以内。</li>
+    <li><b>询盘质量够、流程在漏：</b>30 天 93 个高意向、51 条谈到数量/图纸/定金，卡点是 MOQ（29 会话）、交期（15 会话）与"承诺后不闭环"（37 条承诺、6 条无下文）——把 MOQ/交期写进商品页、把承诺写进台账，这两件事本周就能做。</li>
+  </ol>
+</section>
+
+<footer>superudisplay 店铺经营全景诊断报告 ｜ 数据来源：阿里国际站数据参谋 & 广告报表 & OneTalk IM（2026-09-19 取数）</footer>
+
+<script>
+Chart.defaults.font.family='Microsoft YaHei,PingFang SC,Hiragino Sans GB,Arial';
+Chart.defaults.font.size=11.5;
+Chart.defaults.color='#42586e';
+
+new Chart(document.getElementById('cWeek'),{
+ data:{labels:['6-15','6-22','6-29','7-06','7-13','7-20','7-27','8-03','8-10','8-17','8-24','8-31','9-07','9-14'],
+ datasets:[
+  {type:'bar',label:'曝光量',data:[21753,77401,100108,104774,87134,99837,89948,86222,82650,88786,88610,89900,89295,46551],backgroundColor:'rgba(62,112,150,.35)',yAxisID:'y',order:3},
+  {type:'line',label:'访客 UV',data:[472,1585,1900,2065,1690,1951,1631,1499,1573,1588,1653,1714,1710,816],borderColor:'#c0392b',backgroundColor:'#c0392b',yAxisID:'y1',tension:.3,order:1},
+  {type:'line',label:'商机',data:[18,72,94,118,85,125,89,99,85,97,135,113,101,78],borderColor:'#2e7d4f',backgroundColor:'#2e7d4f',borderDash:[5,3],yAxisID:'y1',tension:.3,order:2}
+ ]},
+ options:{responsive:true,plugins:{legend:{position:'bottom'},title:{display:true,text:'逐周曝光 / 访客 / 商机（2026-06-15~09-17）'}},
+  scales:{y:{title:{display:true,text:'曝光量'},beginAtZero:true},y1:{position:'right',title:{display:true,text:'UV / 商机'},beginAtZero:true,grid:{drawOnChartArea:false}}}}
+});
+
+new Chart(document.getElementById('cPaid'),{
+ type:'bar',
+ data:{labels:['自然搜索','全站推(付费)','直通车(付费)'],
+ datasets:[
+  {label:'曝光',data:[570953,605647,4138],backgroundColor:'rgba(62,112,150,.75)'},
+  {label:'点击',data:[12257,17003,141],backgroundColor:'rgba(198,142,49,.85)'}
+ ]},
+ options:{responsive:true,plugins:{legend:{position:'bottom'},title:{display:true,text:'自然 vs 付费：曝光与点击（点击量级差异大，看长度对比即可）'}},
+  scales:{x:{ticks:{maxRotation:30}},y:{type:'logarithmic',title:{display:true,text:'对数轴（次）'}}}}});
+
+new Chart(document.getElementById('cGeo'),{
+ type:'bar',
+ data:{labels:['美国','中南美其他','菲律宾','法国','英国','澳大利亚','意大利','加拿大','德国','沙特','荷兰','西班牙'],
+ datasets:[
+  {label:'点击',data:[4702,1803,909,824,763,631,651,514,439,357,295,501],backgroundColor:'rgba(62,112,150,.8)'},
+  {label:'询盘',data:[37,13,6,5,6,8,3,5,2,0,0,0],backgroundColor:'rgba(192,57,43,.85)'}
+ ]},
+ options:{responsive:true,plugins:{legend:{position:'bottom'},title:{display:true,text:'地域：点击 vs 询盘（右侧沙特/荷兰/西班牙有点击零询盘）'}},
+  scales:{x:{ticks:{maxRotation:45,minRotation:30}},y:{title:{display:true,text:'次数'}}}}});
+
+new Chart(document.getElementById('cIntent'),{
+ type:'doughnut',
+ data:{labels:['高意向 93','中意向 87','低意向 244'],
+  datasets:[{data:[93,87,244],backgroundColor:['#2e7d4f','#C68E31','#c9d6e2'],borderColor:'#fff',borderWidth:2}]},
+ options:{responsive:true,cutout:'58%',plugins:{legend:{position:'right'},title:{display:true,text:'30 天会话意向分层（n=424）'}}}});
+
+new Chart(document.getElementById('cBlock'),{
+ type:'bar',
+ data:{labels:['买家未回应','承诺后回交未闭环','退款/设计费/运费/转向他供','MOQ 不匹配','交期来不及','只要现货/1件','价格/预算'],
+  datasets:[{label:'会话数',data:[138,31,22,29,15,14,9],backgroundColor:'rgba(192,57,43,.78)'}]},
+ options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false},title:{display:true,text:'卡点分布（同一会话可命中多项）'}},
+  scales:{x:{title:{display:true,text:'会话数'}}}}});
+
+new Chart(document.getElementById('cAcct'),{
+ data:{labels:['Wendy Mai','Kaylee Law','Tina Gao','May Xie','Zhang Zaria','Emily','Nancy Wen','Miah'],
+ datasets:[
+  {type:'bar',label:'IM 会话数（30天）',data:[147,90,86,78,5,6,2,2],backgroundColor:'rgba(62,112,150,.8)',yAxisID:'y'},
+  {type:'line',label:'5 分钟首响率（7-8月均值 %）',data:[37.4,71.2,19.3,45.9,40.7,0,25,0],borderColor:'#2e7d4f',backgroundColor:'#2e7d4f',yAxisID:'y1',tension:.3}
+ ]},
+ options:{responsive:true,plugins:{legend:{position:'bottom'},title:{display:true,text:'跟进量 vs 承接质量（会话数 vs 5 分钟首响率）'}},
+  scales:{y:{beginAtZero:true,title:{display:true,text:'会话数'}},y1:{position:'right',beginAtZero:true,max:100,title:{display:true,text:'5 分钟率 %'},grid:{drawOnChartArea:false}}}}});
+</script>
+</body>
+</html>
